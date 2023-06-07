@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.hwang.dao.HnoticeDao">
+
+	<!-- 공지사항 목록 조회 -->
+	<select id="hnoticelist" resultType="kr.happyjob.study.hwang.model.HnoticeModel">
+		/*kr.happyjob.study.hwang.dao.HnoticeDao.hnoticelist*/
+		select noti.notice_no
+                ,noti.loginID
+                ,ui.name as writer
+                ,noti.notice_title
+                ,noti.notice_date
+                ,noti.notice_det
+                ,noti.file_name
+                ,noti.file_size
+                ,noti.file_nadd
+                ,noti.file_madd  
+         from tb_notice  noti   
+                inner join tb_userinfo ui on ui.loginID = noti.loginID
+         <where>    
+               <if test="(scrtitle != null) and (!scrtitle.equals(''))">
+                    and noti.notice_title Like CONCAT('%', #{scrtitle}, '%')
+               </if>          
+               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and noti.notice_date  <![CDATA[>=]]> #{srcsdate}
+               </if>               
+               <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and noti.notice_date <![CDATA[<=]]> #{srcedate}
+               </if>  
+          </where> 		
+		ORDER BY noti.notice_date DESC
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	<!-- 공지사항 목록 총 갯수 조회 -->
+	<select id="counthnoticelist" resultType="int">
+		/*kr.happyjob.study.hwang.dao.HnoticeDao.counthnoticelist*/
+		SELECT COUNT(1) AS tot_cnt 
+         from tb_notice     
+         <where>    
+               <if test="(scrtitle != null) and (!scrtitle.equals(''))">
+                    and notice_title Like CONCAT('%', #{scrtitle}, '%')
+               </if>          
+               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and notice_date  <![CDATA[>=]]> #{srcsdate}
+               </if>               
+               <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and notice_date <![CDATA[<=]]> #{srcedate}
+               </if>  
+          </where> 		
+	</select>
+	
+	<insert id="hnoticenewsave">
+	     <selectKey resultType="int" keyProperty="notice_no" order="BEFORE">
+            select ifnull(max(notice_no),0) + 1 from tb_notice
+         </selectKey> 
+	     insert into tb_notice 
+	                    ( 
+	                       notice_no
+                          ,loginID
+                          ,notice_title
+                          ,notice_date
+                          ,notice_det
+                          ,file_name
+                          ,file_size
+                          ,file_nadd
+                          ,file_madd 
+	                    ) values (
+	                      #{noticeno}  
+	                     , #{loginId}      
+	                     , #{notice_title}   
+	                     , DATE_FORMAT(now(), '%Y-%m-%d')
+	                     , #{notice_det}   
+	                     , #{file_name}   
+	                     , #{file_size}
+	                     , #{file_nadd}  
+	                     , #{file_madd} 
+	                    )
+	</insert>
+	
+	<update id="hnoticenewupdate">
+		update tb_notice
+			set loginID =  #{loginId}   
+                ,notice_title = #{notice_title} 
+                ,notice_date = DATE_FORMAT(now(), '%Y-%m-%d')
+                ,notice_det = #{notice_det}   
+                ,file_name = #{file_name}   
+                ,file_size = #{file_size}
+                ,file_nadd = #{file_nadd}  
+                ,file_madd = #{file_madd} 
+          where noti.notice_no = #{notice_no} 
+	
+	</update>
+	
+	<select id="detailone" resultType="kr.happyjob.study.hwang.model.HnoticeModel">
+		select noti.notice_no
+                ,noti.loginID
+                ,ui.name as writer
+                ,noti.notice_title
+                ,noti.notice_date
+                ,noti.notice_det
+                ,noti.file_name
+                ,noti.file_size
+                ,noti.file_nadd
+                ,noti.file_madd  
+         from tb_notice  noti   
+                inner join tb_userinfo ui on ui.loginID = noti.loginID
+        where noti.notice_no = #{notice_no}
+	
+	</select>
+	
+	
+</mapper>

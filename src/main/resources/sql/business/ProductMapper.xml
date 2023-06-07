@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.ProductDao">
+
+	<!-- 제픔 목록 조회 -->
+	<select id="productList" resultType="kr.happyjob.study.business.model.ProductModel">
+		/*kr.happyjob.study.business.dao.ProductDao.productList*/
+		 select po.product_no as product_no
+		        ,po.lcategory_cd as lcategory_cd
+		        ,dc.detail_name as lcategory_name
+		        ,po.mcategory_cd as mcategory_cd
+		        ,py.product_name as mcategory_name
+		        ,po.product_name as product_name
+		        ,po.price as price
+		        ,po.stock as stock
+		    from tb_product po
+		         inner join tb_detail_code dc on dc.group_code = 'lcategory_cd' and po.lcategory_cd = dc.detail_code
+		         inner join tb_product_type py on po.lcategory_cd = py.lcategory_cd and po.mcategory_cd = py.mcategory_cd
+		   <where>
+		   		<if test="!lcategory_cd.equals('') and lcategory_cd != null">
+			   		and po.lcategory_cd = #{lcategory_cd} 
+		   		</if>
+		   		<if test="!''.equals(mcategory_cd) and mcategory_cd != null and !'제품대분류를 선택해 주세요.'.equals(mcategory_cd)">
+			   		and po.mcategory_cd = #{mcategory_cd}
+		   		</if>
+		   </where> 
+		order by po.product_no DESC
+		LIMIT #{pageindex}, #{pageSize}
+		
+	</select>
+ 
+	<!-- 제품 목록 총갯수 조회 -->
+	<select id="productListCnt" resultType="int">
+		/*kr.happyjob.study.business.dao.ProductDao.productListCnt*/
+		select count(po.product_no) total_cnt
+	      from tb_product po
+	           inner join tb_detail_code dc on dc.group_code = 'lcategory_cd' and po.lcategory_cd = dc.detail_code
+	           inner join tb_product_type py on po.lcategory_cd = py.lcategory_cd and po.mcategory_cd = py.mcategory_cd
+	      <where>
+		   		<if test="!lcategory_cd.equals('') and lcategory_cd != null">
+			   		and po.lcategory_cd = #{lcategory_cd} 
+		   		</if>
+		   		<if test="!''.equals(mcategory_cd) and mcategory_cd != null and !'제품대분류를 선택해 주세요.'.equals(mcategory_cd)">
+			   		and po.mcategory_cd = #{mcategory_cd}
+		   		</if>
+		  </where> 
+		
+	</select>
+	
+	<!-- 제품 목록 총갯수 조회 -->
+	<update id="insertStock">
+		/*kr.happyjob.study.business.dao.ProductDao.insertStock*/
+		 update tb_product
+		 <if test="stock != null and !stock.equals('')">
+		    set stock = stock+#{stock}
+		 </if>
+		 <if test="price != null and !price.equals('')">
+		    set price = #{price}
+		       ,stock = #{insertStock}
+		 </if>
+		  where product_no = #{product_no}
+	</update>
+	
+	<!-- 제품상세 조회 -->
+	<select id="productDetaile" resultType="kr.happyjob.study.business.model.ProductModel">
+		/*kr.happyjob.study.business.dao.ProductDao.productDetaile*/
+		select product_no
+		      ,lcategory_cd
+		      ,mcategory_cd
+		      ,product_name
+		      ,price
+		      ,stock
+		  from tb_product
+		 <where>
+		 	<if test="product_name != null">
+		 		and product_name = #{product_name}
+		 	</if>
+		 	<if test="product_name == null">
+		 		and product_no = #{product_no} and lcategory_cd = #{lcategory_cd} and mcategory_cd = #{mcategory_cd}
+		 	</if>
+		 </where> 
+	</select>
+
+	<!-- 제품중분류상세 조회 -->
+	<select id="productTypeDetaile" resultType="kr.happyjob.study.business.model.ProductModel">
+		/*kr.happyjob.study.business.dao.ProductDao.productTypeDetaile*/
+		select lcategory_cd
+		      ,mcategory_cd
+		      ,product_name
+		  from tb_product_type
+		 where product_name = #{mProduct_name}
+	</select>
+
+	<!-- 제품중분류 등록 -->
+	<insert id="insertPreductType">
+	/*kr.happyjob.study.business.dao.ProductDao.insertPreductType*/
+	<selectKey keyProperty="mcategory_cd" resultType="int" order="BEFORE"> 
+	   	SELECT IFNULL(MAX(mcategory_cd),0) +1
+	      FROM tb_product_type
+		 where lcategory_cd = #{lcategory_cd}
+	  </selectKey>
+		insert
+		  into tb_product_type
+		       (
+		         lcategory_cd
+		        ,mcategory_cd
+		        ,product_name
+		        )
+		values (
+				 #{lcategory_cd}
+				,#{mcategory_cd} 
+				,#{mProduct_name}
+		        )
+	</insert>
+
+	<!-- 제품소분류 등록 -->
+	<insert id="insertPreduct">
+	/*kr.happyjob.study.business.dao.ProductDao.insertPreduct*/
+	<selectKey keyProperty="product_no" resultType="int" order="BEFORE"> 
+	   	SELECT IFNULL(MAX(product_no),0) +1
+	      FROM tb_product
+	  </selectKey>
+		insert
+		  into tb_product
+		       (
+		         product_no
+		        ,lcategory_cd
+		        ,mcategory_cd
+		        ,product_name
+		        ,price
+		        ,stock
+		        )
+		values (
+				 #{product_no}
+				,#{lcategory_cd}
+				,#{mProduct_cd} 
+				,#{product_name}
+				,null
+				,null
+		        )
+	</insert>
+	
+</mapper>

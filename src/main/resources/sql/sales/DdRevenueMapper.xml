@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.DdRevenueDao">
+
+	<!-- 일별주문조회 리스트 -->
+	<select id="ddRevenueList" resultType="kr.happyjob.study.sales.model.DdRevenueModel">
+		 select co.contract_date
+		       ,cl.client_name
+		       ,po.product_name
+		       ,co.product_amt
+		       ,co.price
+		       ,co.amt_price
+		       ,co.tax
+		       ,co.total_price
+		   from tb_contract co
+		        inner join tb_client cl on co.client_no = cl.client_no
+		        inner join tb_product po on co.lcategory_cd = po.lcategory_cd and co.mcategory_cd = po.mcategory_cd and co.product_no = po.product_no
+		  where co.contract_type='2' and date_format(co.contract_date,'%Y-%m-%d') = #{searchDate}
+			  <if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
+			  		and co.client_no = #{searchClientNo}
+			  </if>
+			  LIMIT #{pageIndex}, #{pageSize}
+	</select>
+	
+	<!-- 일별주문 리스트 카운트 -->
+	<select id="countRevenueList" resultType="int">
+	 select count(*)
+	   from tb_contract co
+	        inner join tb_client cl on co.client_no = cl.client_no
+	        inner join tb_product po on co.lcategory_cd = po.lcategory_cd and co.mcategory_cd = po.mcategory_cd and co.product_no = po.product_no
+	  	where co.contract_type='2' and date_format(co.contract_date,'%Y-%m-%d') = #{searchDate}
+		  <if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
+		  		and co.client_no = #{searchClientNo}
+		  </if>
+	</select>
+	
+	<!-- 일별매출/한달간 누적매출 -->
+	<select id="ddRevChart" resultType="kr.happyjob.study.sales.model.DdRevenueModel">
+	 SET @va=0;
+	  SELECT DATE_FORMAT(contract_date,'%Y-%m-%d') AS contract_date
+	         ,s.sum_sales AS sum_sales
+	         ,truncate((@va:=@va+s.sum_sales), 0) AS cumsum_sales  
+	   FROM (
+	      select co.contract_date, sum(co.total_price) sum_sales , co.client_no
+	       from tb_contract co
+	        inner join tb_client cl on co.client_no = cl.client_no
+	       where co.contract_type='2' 
+		  <if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
+		  		and co.client_no = #{searchClientNo}
+		  </if>
+	       GROUP BY DATE_FORMAT(contract_date,'%Y-%m-%d'), co.client_no
+	        ) s
+	  WHERE DATE_FORMAT(contract_date,'%Y-%m-%d') between #{oneMonthAgo} and #{searchDate}
+	  GROUP BY contract_date
+	  ORDER BY contract_date
+	</select>
+	
+	<!-- 일자별 품목별 매출 -->
+	<select id="ddRevProductChart" resultType="kr.happyjob.study.sales.model.DdRevenueModel">
+	   select co.contract_date, sum(co.total_price) sum_p_sales , po.product_name
+		   from tb_contract co
+		   inner join tb_client cl on co.client_no = cl.client_no
+		   inner join tb_product po on co.lcategory_cd = po.lcategory_cd and co.mcategory_cd = po.mcategory_cd and co.product_no = po.product_no
+			   where co.contract_type='2'
+			   and date_format(co.contract_date,'%Y-%m-%d') = #{searchDate}
+	   		  <if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
+			  		and co.client_no = #{searchClientNo}
+			  </if>
+		   GROUP BY DATE_FORMAT(contract_date,'%Y-%m-%d'), po.product_name
+	</select>
+	
+</mapper>

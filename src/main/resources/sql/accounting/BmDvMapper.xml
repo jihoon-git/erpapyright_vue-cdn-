@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.accounting.dao.BmDvDao">
+
+	<!-- 지출결의서 리스트 조회 -->
+	<select id="expenselist" resultType="kr.happyjob.study.accounting.model.BmDvModel">
+		/*kr.happyjob.study.accounting.dao.BmDvDao.expenselist*/
+		select
+		ep.exp_no
+		,ep.loginID
+		,ui.name
+		,dtc.detail_name
+		,act.account_name
+		,ep.exp_date
+		,ep.use_date
+		,ep.exp_spent
+		,upper(ep.exp_yn) as exp_yn
+		,ep.yn_date
+		,ep.exp_name
+		from tb_expense ep
+		inner join tb_detail_code dtc
+		on dtc.group_code = 'laccount_cd' and
+		dtc.detail_code = ep.laccount_cd
+		inner join tb_account_title act on act.laccount_cd = ep.laccount_cd
+		and
+		act.account_cd = ep.account_cd
+		inner join tb_userinfo ui on
+		ui.loginID = ep.loginID
+		<where>
+			<if test="(stdate != null) and (!stdate.equals(''))">
+				and ep.exp_date <![CDATA[>=]]>
+				#{stdate}
+			</if>
+			<if test="(eddate != null) and (!eddate.equals(''))">
+				and ep.exp_date <![CDATA[<=]]>
+				#{eddate}
+			</if>
+			<if test="(actcd != null) and (!actcd.equals(''))">
+				and ep.account_cd <![CDATA[=]]>
+				#{actcd}
+			</if>
+			<if test="(expyn != null) and (!expyn.equals(''))">
+				and ep.exp_yn <![CDATA[=]]>
+				#{expyn}
+			</if>
+			<if test="(lctcd != null) and (!lctcd.equals(''))">
+				and ep.laccount_cd <![CDATA[=]]>
+				#{lctcd}
+			</if>
+			<if test="(loginID != null) and (!loginID.equals(''))">
+				and ep.loginID <![CDATA[=]]>
+				#{loginID}
+			</if>
+			<if test="(searchname != null) and (!searchname.equals(''))">
+				and ui.name Like CONCAT('%', #{searchname}, '%')
+			</if>
+		</where>
+		ORDER BY ep.exp_no desc
+		LIMIT #{pageIndex}, #{pageSize}
+	</select>
+
+	<!-- 지출결의서 리스트 카운트 -->
+	<select id="countexpenselist" resultType="int">
+		/*kr.happyjob.study.accounting.dao.BmDvDao.countexpenselist*/
+		select
+		count(1) as tot_cnt
+		from tb_expense ep
+		inner join tb_detail_code dtc on
+		dtc.group_code = 'laccount_cd' and
+		dtc.detail_code = ep.laccount_cd
+		inner join tb_account_title act on act.laccount_cd = ep.laccount_cd
+		and
+		act.account_cd = ep.account_cd
+		inner join tb_userinfo ui on
+		ui.loginID = ep.loginID
+		<where>
+			<if test="(stdate != null) and (!stdate.equals(''))">
+				and ep.exp_date <![CDATA[>=]]>
+				#{stdate}
+			</if>
+			<if test="(eddate != null) and (!eddate.equals(''))">
+				and ep.exp_date <![CDATA[<=]]>
+				#{eddate}
+			</if>
+			<if test="(actcd != null) and (!actcd.equals(''))">
+				and ep.account_cd <![CDATA[=]]>
+				#{actcd}
+			</if>
+			<if test="(expyn != null) and (!expyn.equals(''))">
+				and ep.exp_yn <![CDATA[=]]>
+				#{expyn}
+			</if>
+			<if test="(lctcd != null) and (!lctcd.equals(''))">
+				and ep.laccount_cd <![CDATA[=]]>
+				#{lctcd}
+			</if>
+			<if test="(loginID != null) and (!loginID.equals(''))">
+				and ep.loginID <![CDATA[=]]>
+				#{loginID}
+			</if>
+			<if test="(searchname != null) and (!searchname.equals(''))">
+				and ui.name Like CONCAT('%', #{searchname}, '%')
+			</if>
+		</where>
+	</select>
+
+	<!-- 파일 넘버 확인용 -->
+	<select id="filenocheck" resultType="int">
+		select
+		ifnull(max(file_no),0) + 1
+		FROM tb_file
+	</select>
+
+	<!-- 파일 코드 확인용 -->
+	<select id="filecdcheck" resultType="int">
+		select
+		ifnull(max(file_cd),0) + 1
+		FROM tb_file
+	</select>
+
+	<!-- 지출결의서 저장 -->
+	<insert id="expensenewsave">
+		<selectKey resultType="int" keyProperty="expenseno" order="BEFORE">
+			select ifnull(max(exp_no),0) + 1 from tb_expense
+		</selectKey>
+		insert into tb_expense
+		(
+		exp_no
+		,laccount_cd
+		,account_cd
+		,loginID
+		,exp_det
+		,reject_rsn
+		,exp_date
+		,use_date
+		,exp_spent
+		,exp_yn
+		,yn_date
+		,exp_name
+		) values (
+		#{expenseno}
+		,#{reglctcd}
+		,#{regactcd}
+		,#{loginIDreg}
+		,#{regexpdet}
+		,#{reject_rsn}
+		,#{regdate}
+		,#{regusedate}
+		,#{regspent}
+		,'w'
+		,#{yn_date}
+		,#{exp_name}
+		)
+	</insert>
+
+	<!-- 파일 저장 -->
+	<insert id="filenewsave">
+		<selectKey resultType="int" keyProperty="fileno" order="BEFORE">
+			select ifnull(max(file_no),0) + 1 from tb_file
+		</selectKey>
+		insert into tb_file
+		(
+		file_no
+		,file_cd
+		,file_type
+		,file_size
+		,file_name
+		,file_nadd
+		,file_madd
+		) values (
+		#{fileno}
+		,#{filecd}
+		,#{file_type}
+		,#{file_size}
+		,#{file_name}
+		,#{file_nadd}
+		,#{file_madd}
+		)
+	</insert>
+
+	<!-- 지출결의서 상세보기 -->
+	<select id="expensedetail" resultType="kr.happyjob.study.accounting.model.BmDvModel">
+		/*kr.happyjob.study.accounting.dao.BmDvDao.expensedetail*/
+		select
+		ep.exp_no
+		,ui.name
+		,dc.detail_name
+		,act.account_name
+		,ep.laccount_cd
+		,ep.account_cd
+		,ep.loginID
+		,ep.exp_det
+		,ep.reject_rsn
+		,ep.exp_date
+		,ep.use_date
+		,ep.exp_spent
+		,ep.exp_yn
+		,ep.yn_date
+		,ep.exp_name
+		,ep.file_cd
+		,ep.file_no
+		from tb_expense ep
+		inner
+		join tb_userinfo ui on ui.loginID = ep.loginID
+		inner join tb_detail_code dc on dc.group_code="laccount_cd" and dc.detail_code=ep.laccount_cd
+		inner join tb_account_title act on act.laccount_cd = ep.laccount_cd AND act.account_cd = ep.account_cd
+		where ep.exp_no =
+		#{expno}
+	</select>
+
+	<!-- 지출결의서 업데이트 -->
+	<update id="expenseupdate">
+		update tb_expense
+		set
+		laccount_cd = #{reglctcd}
+		,account_cd = #{regactcd}
+		,use_date = #{regusedate}
+		,exp_spent =
+		#{regspent}
+		,exp_det = #{regexpdet}
+		,file_cd = #{filecd}
+		,file_no = #{fileno}
+		where exp_no = #{regexpno}
+	</update>
+
+
+	<!-- 파일 정보 추출 -->
+	<select id="getfiledetail" resultType="kr.happyjob.study.accounting.model.FileModel">
+		/*kr.happyjob.study.accounting.dao.BmDvDao.getfiledetail*/
+		select
+		file_type
+		,file_size
+		,file_no
+		,file_name
+		,file_nadd
+		,file_madd
+		,file_cd
+		from
+		tb_file
+		where file_cd=#{filecd}
+	</select>
+
+	<!-- 파일 업데이트 -->
+	<update id="fileupdate">
+		update tb_file
+		set
+		file_type = #{file_type}
+		,file_size =
+		#{file_size}
+		,file_name = #{file_name}
+		,file_nadd = #{file_nadd}
+		,file_madd = #{file_madd}
+		where file_no = #{fileno} and file_cd =
+		#{filecd}
+	</update>
+
+	<!-- 지출결의서 파일 업데이트 -->
+	<update id="expensefileupdate">
+		update tb_expense
+		set
+		laccount_cd = #{reglctcd}
+		,account_cd = #{regactcd}
+		,use_date = #{regusedate}
+		,exp_spent =
+		#{regspent}
+		,exp_det = #{regexpdet}
+		,file_cd = 1
+		,file_no = #{filen}
+		where exp_no = #{regexpno}
+	</update>
+
+	<!-- 승인 반려 저장 -->
+	<update id="approvalexpense">
+		update tb_expense
+		set
+		reject_rsn = #{rejectrsn}
+		,exp_name = #{approvalname}
+		,exp_yn = #{approval}
+		,yn_date
+		=#{approvaldate}
+		where
+		exp_no = #{expno}
+	</update>
+
+	<!-- 지출 결의서 파일 삭제 -->
+	<delete id="deletefile">
+		delete from tb_file
+		where file_cd = #{filecd}
+	</delete>
+
+	<!-- 지출 결의서 삭제 -->
+	<delete id="expensedelete">
+		delete from tb_expense
+		where exp_no = #{regexpno}
+	</delete>
+
+	<!-- 파일 정보 추출 -->
+	<select id="detailfileone" resultType="kr.happyjob.study.accounting.model.FileModel">
+		/*kr.happyjob.study.accounting.dao.BmDvDao.detailfileone*/
+		select
+		file_type
+		,file_size
+		,file_no
+		,file_name
+		,file_nadd
+		,file_madd
+		,file_cd
+		from
+		tb_file
+		where file_cd=#{filecd} and file_no=#{fileno}
+	</select>
+
+	<!-- 회계정보 저장 -->
+	<insert id="newaccount">
+		<selectKey resultType="int" keyProperty="acono" order="BEFORE">
+			select ifnull(max(account_no),0) + 1 from tb_account_info
+		</selectKey>
+		insert into tb_account_info
+		(
+		account_no
+		,exp_no
+		,account_pay
+		) values (
+		#{acono}
+		,#{expno}
+		,#{appspent}
+		)
+	</insert>
+	
+	<!-- 지출결의서 파일 저장 -->
+	<insert id="expensefilenewsave">
+		<selectKey resultType="int" keyProperty="expenseno" order="BEFORE">
+			select ifnull(max(exp_no),0) + 1 from tb_expense
+		</selectKey>
+		insert into tb_expense
+		(
+		exp_no
+		,laccount_cd
+		,account_cd
+		,loginID
+		,exp_det
+		,reject_rsn
+		,exp_date
+		,use_date
+		,exp_spent
+		,exp_yn
+		,yn_date
+		,exp_name
+		,file_cd
+		,file_no
+		) values (
+		#{expenseno}
+		,#{reglctcd}
+		,#{regactcd}
+		,#{loginIDreg}
+		,#{regexpdet}
+		,#{reject_rsn}
+		,#{regdate}
+		,#{regusedate}
+		,#{regspent}
+		,'w'
+		,#{yn_date}
+		,#{exp_name}
+		,#{filecd}
+		,#{fileno}
+		)
+	</insert>
+	
+	<!-- 파일 cdno 제거 -->
+	<update id="filecdnoremove">
+		update tb_expense
+		set
+		file_cd = #{null}
+		,file_no = #{null}
+		where
+		exp_no = #{expno}
+	</update>
+	
+</mapper>

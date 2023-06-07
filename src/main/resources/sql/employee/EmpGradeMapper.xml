@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.EmpGradeDao">
+
+	<!-- 승진내역 목록 조회 -->
+	<select id="empGradelist" resultType="kr.happyjob.study.employee.model.EmpGradeModel">
+		/*kr.happyjob.study.employee.dao.EmpGradeDao.empGradelist*/
+		SELECT pt.prmtn_no
+		       ,pt.loginID
+		       ,pt.prmtn_date
+		       ,pt.prmtn_name
+		       ,ui.emp_no 
+		       ,ui.name 
+		       ,dc.detail_name as deptname 
+		       ,dc2.detail_name as rankname 
+		  FROM tb_promotion pt
+		    LEFT JOIN (select max(prmtn_no) as mprmtn_no, loginID
+		    	from tb_promotion
+		    	group by loginID) pm ON pt.loginID = pm.loginID AND pt.prmtn_no <![CDATA[<]]> pm.mprmtn_no
+		    left outer join tb_userinfo ui on pt.loginID = ui.loginID
+		    left outer join tb_detail_code dc on dc.group_code = 'dept_cd' and dc.detail_code = ui.dept_cd
+		    inner join tb_detail_code dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd
+	        	<where>    
+	               <if test="(srcdetp != null) and (!srcdetp.equals(''))">
+	                    and ui.dept_cd = #{srcdetp}
+	               </if> 
+	               <if test="(srcrank != null) and (!srcrank.equals(''))">
+	                    and ui.rank_cd  = #{srcrank}
+	               </if>   
+	               <if test="(srcempno != null) and (!srcempno.equals(''))">
+	                    and ui.emp_no = #{srcempno}
+	               </if>            
+	               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+	                   and pt.prmtn_date  <![CDATA[>=]]> #{srcsdate}
+	               </if>               
+	               <if test="(srcedate != null) and (!srcedate.equals(''))">
+	                  and pt.prmtn_date <![CDATA[<=]]> #{srcedate}
+	               </if>  
+	               	  and pm.loginID IS NULL
+	                  and ui.status_cd = 'A' or 'B'
+	          </where> 
+	        	ORDER BY ui.emp_no 
+	        	LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	<!-- 승진내역 목록 총 갯수 조회 -->
+	<select id="countEmpgradelist" resultType="int">
+		/*kr.happyjob.study.employee.dao.EmpGradeDao.countEmpgradelist*/
+		SELECT COUNT(1) AS tot_cnt 
+	         from tb_promotion pt 
+	         		inner join (
+		                      select prmtn_no, loginID,  MAX(prmtn_no ) as max_prmtn
+		                      from tb_promotion 
+		                      group by loginID
+		                    ) pm on pm.loginID = pt.loginID and pt.prmtn_no = pm.max_prmtn 
+          			inner join tb_userinfo ui on pt.loginID = ui.loginID
+	         	<where>    
+	               <if test="(srcdetp != null) and (!srcdetp.equals(''))">
+	                    and ui.dept_cd = #{srcdetp}
+	               </if> 
+	               <if test="(srcrank != null) and (!srcrank.equals(''))">
+	                    and ui.rank_cd  = #{srcrank}
+	               </if>   
+	               <if test="(srcempno != null) and (!srcempno.equals(''))">
+	                    and ui.emp_no = #{srcempno}
+	               </if>            
+	               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+	                   and pt.prmtn_date  <![CDATA[>=]]> #{srcsdate}
+	               </if>               
+	               <if test="(srcedate != null) and (!srcedate.equals(''))">
+	                  and pt.prmtn_date <![CDATA[<=]]> #{srcedate}
+	               </if>  
+	                  and ui.status_cd = 'A' or 'B'
+	          </where>   
+	
+	</select>
+	
+	<!-- 승진내역 상세 조회 -->
+	<select id="detailEmp" resultType="kr.happyjob.study.employee.model.EmpGradeModel">
+		select pt.loginID
+			, pt.prmtn_no
+		      ,pt.prmtn_date
+		      ,pt.prmtn_name
+		      ,dc.detail_name rankname
+		      ,ui.name 
+		      ,ui.emp_no 
+		      ,dc2.detail_name as deptname 
+		    from tb_promotion pt
+			      inner join tb_detail_code dc on dc.group_code = 'rank_cd' and dc.detail_code = pt.rank_cd
+			      inner join tb_userinfo ui on pt.loginID = ui.loginID 
+			      left outer join tb_detail_code dc2 on dc2.group_code = 'dept_cd' and dc2.detail_code = ui.dept_cd  
+		  		where pt.loginID = #{loginId}
+			    ORDER BY pt.prmtn_no desc
+			    LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	
+	<!-- 승진내역 상세 목록 총 갯수 조회 -->
+	<select id="countEmpdetail" resultType="int">
+		/*kr.happyjob.study.employee.dao.EmpGradeDao.countEmpdetail*/
+		SELECT COUNT(1) AS tot_cnt 
+			 from tb_promotion pt 
+						inner join tb_userinfo ui on pt.loginID = ui.loginID
+			 	where pt.loginID = #{loginId}
+	
+	</select>
+	
+	<!-- 승진내역 등록 -->
+	<insert id = "empGradesave">
+   	     <selectKey resultType="int" keyProperty="prmtnno" order="BEFORE">
+            select ifnull(max(prmtn_no),0) + 1 from tb_promotion
+         </selectKey> 
+     	insert into tb_promotion(
+								  loginID
+						  		  ,prmtn_no
+								  ,prmtn_date
+								  ,prmtn_name
+								  ,rank_cd 
+								 ) values (
+								  #{ploginID}
+								  ,#{prmtnno}
+								  , DATE_FORMAT(now(), '%Y-%m-%d')
+								  ,#{prmtn_name}
+								  ,#{prankCd});
+	</insert>
+	
+	<!-- 승진내역 등록 시 유저 테이블 직급 update -->
+	 <update id="updateRank">
+		 update tb_userinfo
+		  	set rank_cd = #{prankCd}
+		  where loginID = #{ploginID}
+	 </update>
+</mapper>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.TaApproveDao">
+
+	<!-- 근태관리 목록 조회 -->
+	<select id="taapprovelist" resultType="kr.happyjob.study.employee.model.TaApproveModel">
+		/*kr.happyjob.study.employee.dao.TaApproveDao.taapprovelist*/
+		
+		<!-- 번호	사번	사원명	신청구분	시작일자	종료일자	신청일자	승인자	승인여부 -->
+																			
+		select at.atd_no
+		        , ui.emp_no as empno
+		        , ui.name as empname
+				, at.rest_cd 
+				, at.st_date
+				, at.ed_date
+		        , at.app_date
+				, at.atd_name
+				, case when at.atd_yn = 'y' then '승인' when at.atd_yn = 'n' then '반려' when at.atd_yn = 'w' then '승인대기' end as atd_yn
+				
+		  from tb_atd_info at
+		      inner join tb_userinfo ui on ui.loginID = at.loginID
+		  
+		  <where>
+			      
+		       <if test="(appsdate != null) and (!appsdate.equals(''))">
+                   and at.app_date  <![CDATA[>=]]> #{appsdate}
+               </if>               
+               <if test="(appedate != null) and (!appedate.equals(''))">
+                  and at.app_date <![CDATA[<=]]> #{appedate}
+               </if>  
+               <if test="(empno != null) and (!empno.equals(''))">
+                    and ui.emp_no Like CONCAT('%', #{empno}, '%')
+               </if>          
+               <if test="(empname != null) and (!empname.equals(''))">
+                    and ui.name Like CONCAT('%', #{empname}, '%')
+               </if>          
+               <if test="(atdyn != null) and (!atdyn.equals(''))">
+                    and at.atd_yn Like CONCAT('%', #{atdyn}, '%')
+               </if>          
+               
+		 </where>
+		 order by at.atd_no desc
+		 		LIMIT #{pageindex}, #{pageSize}
+		 </select>
+	
+	
+
+	<!-- 근태관리 목록 총 갯수 조회 -->
+	<select id="counttaApprovelist" resultType="int">
+		/*kr.happyjob.study.employee.dao.TaApproveDao.counttaApprovelist*/
+		SELECT COUNT(1) AS tot_cnt 
+         from tb_atd_info at
+		      inner join tb_userinfo ui on ui.loginID = at.loginID
+         <where>    
+               <if test="(appsdate != null) and (!appsdate.equals(''))">
+                   and at.app_date  <![CDATA[>=]]> #{appsdate}
+               </if>               
+               <if test="(appedate != null) and (!appedate.equals(''))">
+                  and at.app_date <![CDATA[<=]]> #{appedate}
+               </if>  
+                <if test="(empno != null) and (!empno.equals(''))">
+                    and ui.emp_no Like CONCAT('%', #{empno}, '%')
+               </if>          
+               <if test="(empname != null) and (!empname.equals(''))">
+                    and ui.name Like CONCAT('%', #{empname}, '%')
+               </if>          
+               <if test="(atdyn != null) and (!atdyn.equals(''))">
+                    and at.atd_yn Like CONCAT('%', #{atdyn}, '%')
+               </if>                  
+          </where> 		
+	</select> 
+	
+	
+	
+	<!-- 근태관리 상세 조회 -->
+	<select id="detailone" resultType="kr.happyjob.study.employee.model.TaApproveModel">
+	     
+	   <!-- 근무부서	근태종류	성명	사번	비상연락처	기간	휴가사유	신청일	승인구분	반려사유 -->
+	     
+		  select ui.dept_cd as deptcd
+				, at.rest_cd 
+		        , ui.name as empnamepop
+		        , ui.emp_no as empnopop
+		        , ui.user_type as user_type      
+		        , ui.hp as tell
+				, at.st_date
+				, at.ed_date
+				, at.rest_rsn
+		        , at.app_date
+				, at.atd_yn
+		        , at.reject_rsn
+     
+		  from tb_atd_info at
+		      inner join tb_userinfo ui on ui.loginID = at.loginID
+	    
+	    where at.atd_no = #{atd_no}
+	    
+	  	</select>
+	
+	
+	
+	<!-- 근태 승인/반려 업데이트 -->
+	<update id="taapprovewupdate">
+	
+			<!-- 승인구분	반려사유	승인자(로그인 user_type='B' 만 가능) -->
+			
+	       update tb_atd_info
+		         set atd_yn = #{atd_yn}
+					,reject_rsn = #{reject_rsn}
+					,atd_name = #{name}  
+					   
+	           where atd_no = #{atd_no}  
+	           		
+	</update>
+	
+	
+</mapper>

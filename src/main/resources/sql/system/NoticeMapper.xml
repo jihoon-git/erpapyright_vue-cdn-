@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.system.dao.NoticeDao">
+
+	<!--  공지사항 목록조회 -->
+	<select id="noticelist" resultType="kr.happyjob.study.system.model.NoticeModel">
+	/*kr.happyjob.study.system.dao.noticeDao.noticelist*/
+	select nt.notice_no
+   	      ,nt.notice_title
+          ,ui.name as writer
+          ,nt.notice_date
+      from tb_notice nt
+           inner join tb_userinfo ui ON nt.loginID = ui.loginID
+    <where>    
+          <if test="(scrtitle != null) and (!scrtitle.equals(''))">
+               and nt.notice_title Like CONCAT('%', #{scrtitle}, '%')
+          </if>          
+          <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+               and nt.notice_date  <![CDATA[>=]]> #{srcsdate}
+          </if>               
+          <if test="(srcedate != null) and (!srcedate.equals(''))">
+               and nt.notice_date <![CDATA[<=]]> #{srcedate}
+          </if>  
+    </where> 		
+		ORDER BY nt.notice_no DESC
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	<!-- 공지사항 목록 총 갯수 조회 -->
+	<select id="countnoticelist" resultType="int">
+		/*kr.happyjob.study.system.dao.HnoticeDao.countnoticelist*/
+		SELECT COUNT(1) AS tot_cnt 
+         from tb_notice     
+         <where>    
+               <if test="(scrtitle != null) and (!scrtitle.equals(''))">
+                    and notice_title Like CONCAT('%', #{scrtitle}, '%')
+               </if>          
+               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and notice_date  <![CDATA[>=]]> #{srcsdate}
+               </if>               
+               <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and notice_date <![CDATA[<=]]> #{srcedate}
+               </if>  
+          </where> 		
+	</select>
+	
+	<!-- 공지사항 등록  -->
+	<insert id="noticenewsave">
+	     <selectKey resultType="int" keyProperty="noticeno" order="BEFORE">
+            select ifnull(max(notice_no),0) + 1 from tb_notice
+         </selectKey> 
+	     insert into tb_notice 
+	                    ( 
+	                       notice_no
+                          ,loginID
+                          ,notice_title
+                          ,notice_det
+                          ,notice_date
+                          ,file_name
+                          ,file_size
+                          ,file_nadd
+                          ,file_madd 
+	                    ) values (
+	                      #{noticeno}  
+	                     ,#{loginId}      
+	                     <if test="fileyn eq 'N'.toString()">
+	                     ,#{notice_title}   
+	                     ,#{notice_det}
+	                     </if>
+	                     <if test="fileyn eq 'Y'.toString()">
+	                     ,#{notice_titlefile}   
+	                     ,#{notice_detfile}
+	                     </if>
+	                     ,DATE_FORMAT(now(), '%Y-%m-%d')	                       
+	                     ,#{fileInfo.file_nm}   
+	                     ,#{fileInfo.file_size}
+	                     ,#{fileInfo.file_nadd}  
+	                     ,#{fileInfo.file_loc} 
+	                    )
+	</insert>
+	<!-- 상세 조회 -->
+	<select id="detailone" resultType="kr.happyjob.study.system.model.NoticeModel">
+	     select nt.notice_no
+               ,nt.loginID
+               ,ui.name as writer
+               ,nt.notice_title
+               ,nt.notice_date
+               ,nt.notice_det
+               ,nt.file_name
+               ,nt.file_size
+               ,nt.file_nadd
+               ,nt.file_madd  
+           from tb_notice nt   
+                inner join tb_userinfo ui on ui.loginID = nt.loginID
+	      where nt.notice_no = #{notice_no} 
+	</select>
+	
+	<update id="noticenewupdate">
+	      update tb_notice
+	           set loginID = #{loginId}  	           
+	               <if test="fileyn eq 'N'.toString()">
+                   ,notice_title = #{notice_title}
+                   ,notice_det = #{notice_det} 
+                   </if>
+                   <if test="fileyn eq 'Y'.toString()">
+	                ,notice_title = #{notice_titlefile}   
+	               ,notice_det = #{notice_detfile}
+	               </if>
+                   ,notice_date = DATE_FORMAT(now(), '%Y-%m-%d')
+                   ,file_name = #{fileInfo.file_nm} 
+                   ,file_size = #{fileInfo.file_size}
+                   ,file_nadd = #{fileInfo.file_nadd}  
+                   ,file_madd  = #{fileInfo.file_loc} 
+	       where notice_no = #{notice_no}
+	</update>
+	
+	<delete id="noticenewdelete">
+	      delete from tb_notice
+	       where notice_no = #{notice_no}
+	</delete>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
+</mapper>

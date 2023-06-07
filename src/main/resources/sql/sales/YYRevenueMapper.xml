@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.YYRevenueDao">
+		
+	<!-- 년매출 조회 -->
+	<select id="yearList" resultType="kr.happyjob.study.sales.model.YYRevenueModel" >
+		/*kr.happyjob.study.sales.dao.YYRevenueDao.yearList*/
+		select IFNULL(orde_cnt.cnt , 0) as orde_cnt <!-- 주문건수 -->
+		      ,IFNULL((orde.order_pay-(expe.expense_pay+si.salary_pay)),0) as income <!-- 당기순이익 -->
+		      ,IFNULL((orde.order_pay-ex.operating_pay),0) as take_pay <!-- 영업이익 -->
+		      ,IFNULL(si.salary_pay,0) as salary_pay <!-- 인건비=급여 -->
+		      ,IFNULL(expe.expense_pay,0) as expense_pay <!-- 기타지출 -->
+		      ,IFNULL(orde.order_pay,0) as order_pay <!-- 매출 -->
+		      ,IFNULL((orde.order_pay/yes_orde.order_pay)*100,0) as take_pay_growth <!-- 전년대비 매출성장률 -->
+		      ,IFNULL((orde.order_pay-(expe.expense_pay+si.salary_pay))/(yes_orde.order_pay-(yes_expe.expense_pay+yes_si.salary_pay))*100,0) as income__growth <!-- 전년대비 순이익 성장률 -->
+		      ,IFNULL(((si.salary_pay-ex.operating_pay)/si.salary_pay)*100,0) as operating_margin <!-- 영업이익률 -->
+		      ,IFNULL(ex.operating_pay,0) as operating_pay <!-- 영업비 -->
+		      ,IF(#{srcdate} = '',YEAR(now())-1+#{index}, YEAR(#{srcdate})-1+#{index}) as srcday
+		  from (
+		        select IFNULL(sum(salary_pay),0) salary_pay
+		          from tb_salary_info
+		         <!-- where salary_date <![CDATA[<]]> '2024-01-01' and salary_date <![CDATA[>=]]> '2023-01-0' -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			         	and salary_date = YEAR(now())-1+#{index} 
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	and salary_date = YEAR(#{srcdate})-1+#{index}
+	              	 </if> 
+              	 </where> 
+		        ) si,
+		        (
+		        select IFNULL(sum(ai.account_pay),0) expense_pay
+		          from tb_account_info ai
+		               inner join tb_expense ex ON ex.exp_no = ai.exp_no
+		         <!-- where ex.yn_date <![CDATA[<]]> '2024-01-01' and ex.yn_date <![CDATA[>=]]> '2023-01-01' and ex.laccount_cd != 7 영업비 코드가 7, 영업비가 아닌거 찾아줌 -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and ex.yn_date = YEAR(now())-1+#{index}  and ex.laccount_cd != 7<!-- 영업비 코드가 7, 영업비가 아닌거 찾아줌 -->
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and ex.yn_date = YEAR(#{srcdate})-1+#{index} and ex.laccount_cd != 7<!-- 영업비 코드가 7, 영업비가 아닌거 찾아줌 -->
+	              	 </if> 
+              	 </where>
+		        ) expe,
+		        (
+		        select IFNULL(sum(ai.account_pay), 0) operating_pay
+		          from tb_account_info ai
+		               inner join tb_expense ex ON ex.exp_no = ai.exp_no
+		         <!-- where ex.yn_date <![CDATA[<]]> '2024-01-01' and ex.yn_date <![CDATA[>=]]> '2023-01-01' and ex.laccount_cd = 7 영업비 코드가 7, 영업비 -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and ex.yn_date = YEAR(now())-1+#{index} and ex.laccount_cd = 7<!-- 영업비 코드가 7, 영업비가 아닌거 찾아줌 -->
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and ex.yn_date = YEAR(#{srcdate})-1+#{index} and ex.laccount_cd = 7<!-- 영업비 코드가 7, 영업비가 아닌거 찾아줌 -->
+	              	 </if> 
+              	 </where>
+		        ) ex,
+		        (
+		        select IFNULL(sum(ai.account_pay),0) order_pay
+		          from tb_account_info ai
+		               inner join tb_contract co ON co.contract_no = ai.contract_no AND co.order_cd = ai.order_cd
+		        <!--  where co.contract_date <![CDATA[<]]> '2024-01-01' and co.contract_date <![CDATA[>=]]> '2023-01-01' -->
+		        <!-- where co.contract_date  = YEAR(now()) -->
+		        <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and co.contract_date = YEAR(now())-1+#{index} 
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and co.contract_date = YEAR(#{srcdate})-1+#{index}
+	              	 </if> 
+              	 </where>
+		        ) orde,
+		        (
+		         select IFNULL(count(ai.order_cd),0) cnt
+		          from tb_account_info ai
+		               inner join tb_contract co ON co.contract_no = ai.contract_no AND co.order_cd = ai.order_cd
+		          <!-- where co.contract_date <![CDATA[<]]> '2024-01-01' and co.contract_date <![CDATA[>=]]> '2023-01-01' -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and co.contract_date = YEAR(now())-1+#{index} 
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and co.contract_date = YEAR(#{srcdate})-1+#{index}
+	              	 </if> 
+              	 </where>
+		        ) orde_cnt,
+		        (
+		        select IFNULL(sum(ai.account_pay),0) order_pay
+		          from tb_account_info ai
+		               inner join tb_contract co ON co.contract_no = ai.contract_no AND co.order_cd = ai.order_cd
+		         <!-- where co.contract_date <![CDATA[<]]> '2023-01-01' and co.contract_date <![CDATA[>=]]> '2022-01-01' -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and co.contract_date = YEAR(now())-2+#{index} 
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and co.contract_date = YEAR(#{srcdate})-2+#{index}
+	              	 </if> 
+              	 </where>
+		        ) yes_orde,
+		        (
+		        select IFNULL(sum(salary_pay),0) salary_pay
+		          from tb_salary_info
+		         <!-- where salary_date <![CDATA[<=]]> '2023-01-01' and salary_date <![CDATA[>=]]> '2022-01-01' -->
+			     <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and salary_date = YEAR(now())-2+#{index} 
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and salary_date = YEAR(#{srcdate})-2+#{index}
+	              	 </if>
+	            </where>  	  
+		        ) yes_si,
+		        (
+		        select IFNULL(sum(ai.account_pay),0) expense_pay
+		          from tb_account_info ai
+		               inner join tb_expense ex ON ex.exp_no = ai.exp_no
+		         <!-- where ex.yn_date <![CDATA[<]]> '2023-01-01' and ex.yn_date <![CDATA[>=]]> '2022-01-01' and ex.laccount_cd = 7 -->
+		         <where>
+			         <if test="(srcdate == null) or (srcdate.equals(''))">
+			        	 and ex.yn_date = YEAR(now())-2+#{index}  and ex.laccount_cd = 7
+			         </if>
+			         <if test="(srcdate != null) and (!srcdate.equals(''))">
+	                 	 and ex.yn_date = YEAR(#{srcdate})-2+#{index} and ex.laccount_cd = 7
+	              	 </if> 
+              	 </where>
+		        ) yes_expe;
+	</select>
+	
+	
+	
+	
+	
+	
+	
+</mapper>

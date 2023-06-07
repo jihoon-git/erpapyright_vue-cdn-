@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.EmpMgtDao">
+
+	<!-- 사원 목록 조회 -->
+	<select id="empMgtList" resultType="kr.happyjob.study.employee.model.EmpMgtModel">
+		/*kr.happyjob.study.employee.dao.EmpMgtDao.empMgtList*/
+		select emp_no
+			   ,loginID
+		       ,name
+		       ,ifnull(dcd.detail_name, '미발령') as dept_name
+		       ,dcr.detail_name as rank_name
+		       ,st_date
+		       ,dcs.detail_name as status_name
+		       ,ed_date
+       		   ,concat(lvst_date,'~',lved_date) lv_date
+       		   ,lvst_date
+       		   ,lved_date
+       		   ,status_cd
+		  from tb_userinfo ui
+		    left outer join tb_detail_code dcd on dcd.group_code = 'dept_cd' and dcd.detail_code = ui.dept_cd
+		    inner join tb_detail_code dcr on dcr.group_code = 'rank_cd' and dcr.detail_code = ui.rank_cd
+		    inner join tb_detail_code dcs on dcs.group_code = 'status_cd' and dcs.detail_code = ui.status_cd
+    	<where>
+    		<if test = "(statusCd != null) and (!statusCd.equals(''))">
+				and ui.status_cd = #{statusCd}
+			</if>
+            <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                and ui.st_date  <![CDATA[>=]]> #{srcsdate}
+            </if>               
+            <if test="(srcedate != null) and (!srcedate.equals(''))">
+             	and ui.st_date <![CDATA[<=]]> #{srcedate}
+            </if>
+        	<if test = "(searchDeptCd != null) and (!searchDeptCd.equals(''))">
+				and ui.dept_cd = #{searchDeptCd}
+			</if>
+			<if test = "(searchRankCd != null) and (!searchRankCd.equals(''))">
+				and ui.rank_cd = #{searchRankCd}
+			</if>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when test="(searchKey != null) and (searchKey eq 'empNo'.toString())">
+						and ui.emp_no LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when test="(searchKey != null) and (searchKey eq 'name'.toString())">
+						and ui.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+    	</where>
+    	order by emp_no desc
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	<!-- 사원 목록 인원 수 조회 -->
+	<select id="countEmpMgtList" resultType="int">
+		/*kr.happyjob.study.employee.dao.EmpMgtDao.countEmpMgtList*/
+		select count(1) as tot_cnt 
+         from tb_userinfo ui
+    	<where>
+    		<if test = "(statusCd != null) and (!statusCd.equals(''))">
+				and ui.status_cd = #{statusCd}
+			</if>
+            <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                and ui.st_date  <![CDATA[>=]]> #{srcsdate}
+            </if>               
+            <if test="(srcedate != null) and (!srcedate.equals(''))">
+               and ui.st_date <![CDATA[<=]]> #{srcedate}
+            </if>
+            <if test = "(searchDeptCd != null) and (!searchDeptCd.equals(''))">
+				and ui.dept_cd = #{searchDeptCd}
+			</if>
+			<if test = "(searchRankCd != null) and (!searchRankCd.equals(''))">
+				and ui.rank_cd = #{searchRankCd}
+			</if>
+			<if test="(searchKey != null) and (!searchKey.equals(''))">
+				<choose>
+					<when test="(searchKey != null) and (searchKey eq 'empNo'.toString())">
+						and ui.emp_no LIKE CONCAT('%', #{searchWord}, '%')
+					</when>
+					<when test="(searchKey != null) and (searchKey eq 'name'.toString())">
+						and ui.name Like CONCAT('%', #{searchWord}, '%')
+					</when>
+				</choose>
+			</if>
+    	</where>
+	</select>
+	
+	<!-- 휴직 처리 -->
+	<update id="leaveEmp">
+	update tb_userinfo
+	  set status_cd = 'B'
+	      ,lvst_date = #{lvst_date}
+	      ,lved_date = #{lved_date}
+	  where loginID = #{loginID}
+	</update>
+	
+	<!-- 복직 처리 -->
+	<update id="comebackEmp">
+	update tb_userinfo
+	  set status_cd = 'A'
+	  where loginID = #{loginID}
+	</update>
+	
+	<!-- 퇴직 처리 -->
+	 <update id="retireEmp">
+	 update tb_userinfo
+	  set status_cd = 'C'
+	      ,ed_date = #{ed_date}
+	  where loginID = #{loginID}
+	 </update>
+	 
+	 <!-- 사원 상세 조회 -->
+	 <select id="empMgtDet" resultType="kr.happyjob.study.employee.model.EmpMgtModel">
+		 select ui.loginID
+	      , ui.emp_no
+	      , ui.user_type
+	      , ui.name
+	      , ui.sex
+	      , ui.hp
+	      , ui.email
+	      , ui.birthday
+	      , ui.school_cd
+	      , ui.account
+	      , ui.zip_code
+	      , ui.addr
+	      , ui.det_addr
+	      , ui.st_date
+	      , ui.ed_date
+	      , ui.dept_cd
+	      , ui.rank_cd
+	      , ui.bank_cd
+	      , ui.status_cd
+	      , ui.lvst_date
+	      , ui.lved_date
+	      ,	ui.file_no
+	      , ui.file_cd
+	      , iing.year_pay
+	      ,(select count(ng.loginID)
+	         from tb_negotiation ng
+	         left outer join tb_userinfo ui on ng.loginID = ui.loginID
+	         where ui.loginID = #{loginID}) pay_nego
+	        ,f.file_type 
+	        ,f.file_nadd
+	        ,f.file_madd
+	        ,f.file_size
+	        ,f.file_name
+		  from tb_userinfo ui
+		    left outer join (select ng.year_pay, ng.loginID
+		                      from tb_negotiation ng
+		                        inner join(
+		                          select loginID,  MAX(nego_date) as max_date
+		                          from tb_negotiation
+		                          group by loginID
+		                        ) ing on ng.loginID = ing.loginID and ng.nego_date = ing.max_date
+		                    ) iing on iing.loginID = ui.loginID
+	      left outer join tb_file f ON f.file_cd = ui.file_cd AND f.file_no = ui.file_no
+		  where ui.loginID = #{loginID}
+	 </select>
+	 
+	 <!-- 사원 정보 수정 -->
+	 <update id="updateEmp">
+	 update tb_userinfo
+		set user_type = #{detUserType}
+		    , hp = #{hp}
+		    , email = #{email}
+		    , school_cd = #{detSchoolCd}
+		    , account = #{account}
+		    , zip_code = #{zip_code}
+		    , addr = #{addr}
+		    , det_addr = #{det_addr}
+		    , st_date = #{st_date}
+		    , dept_cd = #{detDeptCd}
+		    , rank_cd = #{detRankCd}
+		    , bank_cd = #{detBankCd}
+		  where loginID = #{detLoginId};
+	 </update>
+	 
+	 	<!-- 파일 정보 추출 -->
+	<select id="getfiledetail" resultType="kr.happyjob.study.accounting.model.FileModel">
+		/*kr.happyjob.study.employee.dao.EmpMgtDao.getfiledetail*/
+		select
+			file_type
+			,file_size
+			,file_no
+			,file_name
+			,file_nadd
+			,file_madd
+			,file_cd
+		from
+			tb_file
+		where file_no = #{fileno} and file_cd=#{filecd}
+	</select>
+	 
+ 	<!-- 사원 사진 파일 update -->
+	<update id="profileUpdate">
+		update tb_file
+		set file_type = #{file_type}
+			,file_size = #{file_size}
+			,file_name = #{file_name}
+			,file_nadd = #{file_nadd}
+			,file_madd = #{file_madd}
+		where file_cd = #{filecd}
+			and file_no = #{fileno}
+	</update>
+	
+ 	<!-- 사원 사진 삭제시 update(delete) -->
+<!-- 	<update id="profileDelete">
+		update tb_file
+		set file_type = #{file_type}
+			,file_size = #{file_size}
+			,file_name = #{file_name}
+			,file_nadd = #{file_nadd}
+			,file_madd = #{file_madd}
+		where file_cd = #{filecd}
+			and file_no = #{fileno}
+	</update> -->
+	 
+	 <!-- 연봉 입력 시 연봉 테이블 insert -->
+	 <insert id="insertNego">
+		 insert into tb_negotiation(
+	            loginID
+	            ,nego_date
+	            ,year_pay)
+	  		values(#{loginID}
+	            ,date_format(now(), '%Y-%m-%d')
+	            ,#{year_pay})
+	 </insert>
+	 
+	 <!-- 연봉 수정 시 연봉 테이블 update -->
+	 <update id="updateNego">
+		 update tb_negotiation
+		  set nego_date = date_format(now(), '%Y-%m-%d')
+		    , year_pay = #{year_pay}
+		  where loginID = #{loginID}
+	 </update>
+	 
+ 	<!-- 사원정보 수정 -> 기존 직급 가져오기 -->
+	<select id = "beforeRankcd" resultType = "String">
+		select rank_cd
+		  from tb_userinfo
+		WHERE loginID = #{loginID}
+	</select>
+	
+	<!-- 사원정보 수정 -> 승진 시 승진이력테이블에 데이터 추가 -->
+	<insert id = "insertPromo">
+   	     <selectKey resultType="int" keyProperty="prmtnno" order="BEFORE">
+            select ifnull(max(prmtn_no),0) + 1 from tb_promotion
+         </selectKey> 
+     	insert into tb_promotion(
+		  loginID
+  		  ,prmtn_no
+		  ,prmtn_date
+		  ,prmtn_name
+		  ,rank_cd)
+		  values (
+		  #{loginID}
+		  ,#{prmtnno}
+		  , DATE_FORMAT(now(), '%Y-%m-%d')
+		  ,#{promoName}
+		  ,#{detRankCd});
+	</insert>
+</mapper>

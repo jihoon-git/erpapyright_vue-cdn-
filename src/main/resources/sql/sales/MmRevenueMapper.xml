@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.sales.dao.MmRevenueDao">
+
+	<!-- 월별 주문건수, 매출, 영업비, 영업이익, 영업이익률  조회 -->
+	
+	<!-- 1~12월 (chart)-->
+	
+	<select id="mmRevenuelist" resultType="kr.happyjob.study.sales.model.MmRevenueModel">
+		select cont.ym_date 
+		      ,cont.order_amt
+		      ,cont.outgo
+		      ,ifnull(sale.sales_exp,0) as sales_exp
+		      ,ifnull((cont.outgo - sale.sales_exp),0) as sales_profit
+		      ,ifnull((cont.outgo - sale.sales_exp) / cont.outgo,0) as profit_rate
+		      
+		  from (
+		        select COUNT(DISTINCT (order_cd)) as order_amt
+		              ,sum(total_price) as outgo
+		              ,CONCAT(YEAR(contract_date), '-', MONTH(contract_date)) ym_date
+		        from tb_contract
+		        where contract_type = '2'
+		        group by ym_date
+		        ) cont
+		        left outer join (
+		                    select sum(ai.account_pay) as sales_exp 
+		                         , CONCAT(YEAR(yn_date), '-', MONTH(yn_date)) ym_date
+		                        from tb_account_info ai 
+		                        inner join tb_expense ex
+		                                on ai.exp_no = ex.exp_no
+		                       where  ex.laccount_cd = 7 
+		                        group by ym_date
+		                    ) sale on cont.ym_date = sale.ym_date
+		     group by cont.ym_date
+		     having cont.ym_date like CONCAT( #{selectyear} ,'%')
+	</select>
+	
+	<!-- 1~6월 (table) -->
+	<select id="mmRevenuelist1" resultType="kr.happyjob.study.sales.model.MmRevenueModel">
+
+		select cont.ym_date 
+		      ,cont.order_amt
+		      ,cont.outgo
+		      ,ifnull(sale.sales_exp,0) as sales_exp
+		      ,ifnull((cont.outgo - sale.sales_exp),0) as sales_profit
+		      ,ifnull((cont.outgo - sale.sales_exp) / cont.outgo,0) as profit_rate
+		      ,cont.cyear
+		      ,cont.cmonth		      
+		  from (
+		        select COUNT(DISTINCT (order_cd)) as order_amt
+		              ,sum(total_price) as outgo
+		              ,CONCAT(YEAR(contract_date), '-', MONTH(contract_date)) ym_date
+		              ,YEAR(contract_date) as cyear
+              		  ,MONTH(contract_date) as cmonth
+		        from tb_contract
+		        where contract_type = '2'
+		        group by ym_date
+		        ) cont
+		        left outer join (
+		                    select sum(ai.account_pay) as sales_exp 
+		                         , CONCAT(YEAR(yn_date), '-', MONTH(yn_date)) ym_date
+		                        from tb_account_info ai 
+		                        inner join tb_expense ex
+		                                on ai.exp_no = ex.exp_no
+		                       where  ex.laccount_cd = 7 
+		                        group by ym_date
+		                    ) sale on cont.ym_date = sale.ym_date
+		                    
+		group by cont.ym_date
+	    having cont.ym_date like CONCAT( #{selectyear} ,'%')                                   		
+		   and cont.cmonth between 1 and 6
+	</select>
+	
+	<!-- 7~12월 (table) -->
+	
+		<select id="mmRevenuelist2" resultType="kr.happyjob.study.sales.model.MmRevenueModel">
+
+		select cont.ym_date 
+		      ,cont.order_amt
+		      ,cont.outgo
+		      ,ifnull(sale.sales_exp,0) as sales_exp
+		      ,ifnull((cont.outgo - sale.sales_exp),0) as sales_profit
+		      ,ifnull((cont.outgo - sale.sales_exp) / cont.outgo,0) as profit_rate
+		      ,cont.cyear
+		      ,cont.cmonth		      
+		  from (
+		        select COUNT(DISTINCT (order_cd)) as order_amt
+		              ,sum(total_price) as outgo
+		              ,CONCAT(YEAR(contract_date), '-', MONTH(contract_date)) ym_date
+		              ,YEAR(contract_date) as cyear
+              		  ,MONTH(contract_date) as cmonth
+		        from tb_contract
+		        where contract_type = '2'
+		        group by ym_date
+		        ) cont
+		        left outer join (
+		                    select sum(ai.account_pay) as sales_exp 
+		                         , CONCAT(YEAR(yn_date), '-', MONTH(yn_date)) ym_date
+		                        from tb_account_info ai 
+		                        inner join tb_expense ex
+		                                on ai.exp_no = ex.exp_no
+		                       where  ex.laccount_cd = 7 
+		                        group by ym_date
+		                    ) sale on cont.ym_date = sale.ym_date
+		                    
+		group by cont.ym_date
+	    having cont.ym_date like CONCAT( #{selectyear} ,'%')                                   		
+		   and cont.cmonth between 7 and 12
+	</select>
+	
+	
+	
+</mapper>

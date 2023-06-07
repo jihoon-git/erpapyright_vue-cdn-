@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.TaApplyDao">
+
+	<!-- 근태신청 목록 조회 -->
+	<select id="taApplylist" resultType="kr.happyjob.study.employee.model.TaApplyModel">
+		/*kr.happyjob.study.employee.dao.TaApplyDao.taApplylist*/
+		select  atd.atd_no
+			   ,de.detail_name as rest_name	       
+		       ,atd.st_date
+		       ,atd.ed_date
+		       ,atd.atd_name
+		       ,case when atd.atd_yn = 'n' then '반려'
+		             when atd.atd_yn = 'y' then '승인'
+		             when atd.atd_yn = 'w' then '승인대기'
+		           end as atd_yn 		       
+		  from tb_userinfo ui
+		       inner join tb_atd_info atd on ui.loginID = atd.loginID		       
+		       inner join tb_detail_code de on atd.rest_cd = de.detail_code and de.group_code = "rest_cd"        
+		 <where> ui.loginID = #{loginId} 		 
+		 <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and atd.st_date  <![CDATA[>=]]> #{srcsdate}
+         </if>               
+         <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and atd.ed_date <![CDATA[<=]]> #{srcedate}
+         </if>            
+         <if test="(search_rest_name != null) and (!search_rest_name.equals(''))">
+                  and de.detail_name = #{search_rest_name}
+         </if>            
+         <if test="(search_atd_yn != null) and (!search_atd_yn.equals(''))">
+                  and atd_yn = #{search_atd_yn}
+         </if>
+         </where>          
+		ORDER BY atd.atd_no DESC
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+
+	<!-- 근태 목록 카운트 조회 -->
+	<select id="counttaApplylist" resultType="int">
+	/*kr.happyjob.study.employee.dao.TaApplyDao.taApplylist.counttaApplylist*/
+	SELECT COUNT(1) AS tot_cnt 
+      from tb_atd_info atd
+           inner join tb_userinfo ui on ui.loginID = atd.loginID		       
+	       inner join tb_detail_code de on atd.rest_cd = de.detail_code and de.group_code = "rest_cd"
+      <where> atd.loginID = #{loginId}     		 
+		 <if test="(srcsdate != null) and (!srcsdate.equals(''))">
+                   and atd.st_date  <![CDATA[>=]]> #{srcsdate}
+         </if>               
+         <if test="(srcedate != null) and (!srcedate.equals(''))">
+                  and atd.ed_date <![CDATA[<=]]> #{srcedate}
+         </if>            
+         <if test="(search_rest_name != null) and (!search_rest_name.equals(''))">
+                  and de.detail_name = #{search_rest_name}
+         </if>            
+         <if test="(search_atd_yn != null) and (!search_atd_yn.equals(''))">
+                  and atd_yn = #{search_atd_yn}
+         </if>
+         </where>
+	</select>
+	
+	<!-- 총 휴가 및 남은 휴가 조회 -->
+	<select id="total_rest" resultType="kr.happyjob.study.employee.model.TaApplyModel">
+	/* kr.happyjob.study.employee.dao.TaApplyDao.taApplylist */
+	select ui.total_rest
+          ,sum(ifnull(atd.rest_day,0)) as use_rest
+          ,(ui.total_rest - sum(ifnull(atd.rest_day,0))) as remain_rest 
+      from tb_userinfo ui
+           left outer join tb_atd_info atd on atd.loginID = ui.loginID
+                                          and atd.atd_yn = "y"                                                   
+	 where ui.loginID = #{loginId};   
+	</select>
+	
+	<!-- 근태 신청시 조회 -->
+	<select id="rest_info" resultType="kr.happyjob.study.employee.model.TaApplyModel">
+	/* kr.happyjob.study.employee.dao.TaApplyDao.rest_info */
+	select det.detail_name as dept_name
+	      ,ui.name	      
+	      ,ui.emp_no
+	      ,ui.hp
+	  from tb_userinfo ui
+	       inner join tb_detail_code det on ui.dept_cd = det.detail_code        
+	   and det.group_code = "dept_cd"
+	 where ui.loginID = #{loginId}   
+	</select>       
+	      
+	
+	<!-- 근태신청 -->
+	<insert id="taApplysave">
+	     <selectKey resultType="int" keyProperty="atd_no" order="BEFORE">
+            select ifnull(max(atd_no),0) + 1 from tb_atd_info
+         </selectKey> 
+	     insert into tb_atd_info 
+	                    ( 
+	                       atd_no
+	                      ,rest_cd 
+                          ,loginID
+                          ,rest_rsn
+                          ,app_date
+                          ,st_date
+                          ,ed_date
+                          ,rest_day
+                          ,atd_yn                                                
+	                    ) values (
+	                      #{atd_no}  
+	                     ,#{rest_cd}      
+	                     ,#{loginId}   
+	                     ,#{rest_rsn}   
+	                     ,DATE_FORMAT(now(), '%Y-%m-%d')
+	                     ,#{st_date}   
+	                     ,#{ed_date}
+	                     ,(DATEDIFF(DATE_FORMAT(#{ed_date}, '%Y-%m-%d'),DATE_FORMAT(#{st_date}, '%Y-%m-%d')) +1 )
+	                     ,'w'                   	                     
+	                    )
+	</insert>
+	
+	<!-- 반려사유 확인 -->
+	<select id="rest_reject" resultType="kr.happyjob.study.employee.model.TaApplyModel">
+	/* kr.happyjob.study.employee.dao.TaApplyDao.rest_reject_rsn */
+	select atd.atd_name
+	      ,atd.reject_rsn
+	      ,atd.atd_no
+	  from tb_atd_info atd
+	       inner join tb_userinfo ui ON ui.loginID = atd.loginID
+	 where atd.atd_no = #{atd_no}
+	</select>
+	
+</mapper>

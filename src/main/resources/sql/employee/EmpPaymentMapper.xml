@@ -1,0 +1,816 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.employee.dao.EmpPaymentDao">
+
+	<!-- 급여처리 목록 조회 -->
+	<select id="empPaylist" resultType="kr.happyjob.study.employee.model.EmpPaymentModel">
+		/*kr.happyjob.study.employee.dao.EmpPaymentDao.empPaylist*/
+		select salary_no
+			  ,ui.loginID as sloginID
+  		      ,ng.ins_n
+		      ,ng.ins_h
+		      ,ng.ins_e
+		      ,ng.ins_i
+		      ,ng.tax
+			  ,ifnull(si.salary_date,'-') as pay_date <!-- 화면에서 초기 date 값이 null일때 '-' 표시용 -->
+		      ,ng.year_pay
+		      ,ng.month_pay
+		      ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax+ifnull(xp.cnt,'0') as total <!-- 실급여 -->
+		      ,ifnull(xp.cnt,'0') as extra <!-- 지출내역서에서 월별,아이디별,승인된, 지출금액 합 = 비고금액으로 표시됨 -->
+		      ,si.pay_yn
+		 	  ,dc1.detail_name as dept
+      		  ,dc2.detail_name as rank
+		      ,ui.emp_no
+		      ,ui.name
+		      ,xp.exp_no
+		from tb_userinfo ui
+			  left outer join (
+			              select nego.year_pay as year_pay
+			                    ,nego.year_pay/12 as month_pay
+			                    ,nego.year_pay/12*0.045 as ins_n
+			                    ,nego.year_pay/12*0.0343 as ins_h
+			                    ,nego.year_pay/12*0.008 as ins_e
+			                    ,nego.year_pay/12*0.0156 as ins_i
+			                    ,nego.year_pay/12*0.1 as tax
+			                    ,nego.loginID
+			                    ,nego.nego_date
+			              from tb_negotiation nego
+			              ) ng on ui.loginID = ng.loginID
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+			  left outer join (
+			                   select info.salary_no
+			                         ,info.loginID
+			                         ,info.salary_date
+			                         ,info.pay_yn
+			                    from tb_salary_info info
+			                    <where>
+			                       <if test="(srcdate == null) or (srcdate.equals(''))">
+			                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+							       </if>
+							       <if test="(srcdate != null) and (!srcdate.equals(''))">
+					                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+					               </if>               
+					             </where>   
+			                   ) si on si.loginID = ui.loginID
+		<where>
+			year_pay IS NOT NULL <!-- 연봉협상 안된경우 제외시키기려고 넣은 조건 -->
+			<if test="(srcdept != null) and (!srcdept.equals(''))">
+		       AND dept_cd = #{srcdept}     	
+			</if>              
+			<if test="(srcrank != null) and (!srcrank.equals(''))">
+		       AND rank_cd = #{srcrank}     	
+			</if>
+			<if test="(srcdate != null) and (!srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> #{srcdate}
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31'))
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+							and ( (ui.lved_date IS NULL) 
+								  )
+							)
+                    )
+	      	</if>                
+			<if test="(srcdate == null) or (srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> now()
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') )
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') 
+                    		and (ui.lved_date IS NULL) )
+                    )
+	      	</if>
+	      	<if test="(srcName != null) and (!srcName.equals(''))">
+                and ui.name Like CONCAT('%', #{srcName}, '%')
+            </if>                
+            <if test=' "y".equals(srcyn) '>
+	            and si.pay_yn Like CONCAT('%', #{srcyn}, '%')
+            </if>                
+            <if test=' "w".equals(srcyn) '>
+	            and si.pay_yn IS NULL
+            </if>
+         </where>
+		ORDER BY dc2.detail_code, ui.emp_no
+	 	LIMIT #{pageindex}, #{pageSize}	
+	</select>
+	
+	<!-- 급여처리 목록 조회 limit 없는 버전-->
+	<select id="empPaynolist" resultType="kr.happyjob.study.employee.model.EmpPaymentModel">
+		/*kr.happyjob.study.employee.dao.EmpPaymentDao.empPaylist*/
+		select salary_no
+			  ,ui.loginID as sloginID
+  		      ,ng.ins_n
+		      ,ng.ins_h
+		      ,ng.ins_e
+		      ,ng.ins_i
+		      ,ng.tax
+			  ,ifnull(si.salary_date,'-') as pay_date <!-- 화면에서 초기 date 값이 null일때 '-' 표시용 -->
+		      ,ng.year_pay
+		      ,ng.month_pay
+		      ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax+ifnull(xp.cnt,'0') as total <!-- 실급여 -->
+		      ,ifnull(xp.cnt,'0') as extra <!-- 지출내역서에서 월별,아이디별,승인된, 지출금액 합 = 비고금액으로 표시됨 -->
+		      ,si.pay_yn
+		 	  ,dc1.detail_name as dept
+      		  ,dc2.detail_name as rank
+		      ,ui.emp_no
+		      ,ui.name
+		      ,xp.exp_no
+		from tb_userinfo ui
+			  left outer join (
+			              select nego.year_pay as year_pay
+			                    ,nego.year_pay/12 as month_pay
+			                    ,nego.year_pay/12*0.045 as ins_n
+			                    ,nego.year_pay/12*0.0343 as ins_h
+			                    ,nego.year_pay/12*0.008 as ins_e
+			                    ,nego.year_pay/12*0.0156 as ins_i
+			                    ,nego.year_pay/12*0.1 as tax
+			                    ,nego.loginID
+			                    ,nego.nego_date
+			              from tb_negotiation nego
+			              ) ng on ui.loginID = ng.loginID
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+			  left outer join (
+			                   select info.salary_no
+			                         ,info.loginID
+			                         ,info.salary_date
+			                         ,info.pay_yn
+			                    from tb_salary_info info
+			                    <where>
+			                       <if test="(srcdate == null) or (srcdate.equals(''))">
+			                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+							       </if>
+							       <if test="(srcdate != null) and (!srcdate.equals(''))">
+					                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+					               </if>               
+					             </where>   
+			                   ) si on si.loginID = ui.loginID
+		<where>
+			year_pay IS NOT NULL <!-- 연봉협상 안된경우 제외시키기려고 넣은 조건 -->
+			<if test="(srcdept != null) and (!srcdept.equals(''))">
+		       AND dept_cd = #{srcdept}     	
+			</if>              
+			<if test="(srcrank != null) and (!srcrank.equals(''))">
+		       AND rank_cd = #{srcrank}     	
+			</if>
+			<if test="(srcdate != null) and (!srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> #{srcdate}
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31'))
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+							and ( (ui.lved_date IS NULL) 
+								  )
+							)
+                    )
+	      	</if>                
+			<if test="(srcdate == null) or (srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> now()
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') )
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') 
+                    		and (ui.lved_date IS NULL) )
+                    )
+	      	</if>
+	      	<if test="(srcName != null) and (!srcName.equals(''))">
+                and ui.name Like CONCAT('%', #{srcName}, '%')
+            </if>                
+            <if test=' "y".equals(srcyn) '>
+	            and si.pay_yn Like CONCAT('%', #{srcyn}, '%')
+            </if>                
+            <if test=' "w".equals(srcyn) '>
+	            and si.pay_yn IS NULL
+            </if>
+         </where>
+		ORDER BY dc2.detail_code, ui.emp_no
+	</select>  
+	     
+	
+	<!-- 급여처리 목록 총 갯수 조회 -->
+	<select id="cntempPaylist" resultType="int">
+		/*kr.happyjob.study.employee.dao.EmpPaymentDao.cntempPaylist*/
+		select COUNT(1) AS tot_cnt
+		from tb_userinfo ui
+			  left outer join (
+			              select nego.year_pay as year_pay
+			                    ,nego.year_pay/12 as month_pay
+			                    ,nego.year_pay/12*0.045 as ins_n
+			                    ,nego.year_pay/12*0.0343 as ins_h
+			                    ,nego.year_pay/12*0.008 as ins_e
+			                    ,nego.year_pay/12*0.0156 as ins_i
+			                    ,nego.year_pay/12*0.1 as tax
+			                    ,nego.loginID
+			                    ,nego.nego_date
+			              from tb_negotiation nego
+			              ) ng on ui.loginID = ng.loginID
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+			  inner join (select detail_code
+			                    ,group_code
+			                    ,detail_name
+			              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+			  left outer join (
+			                   select info.salary_no
+			                         ,info.loginID
+			                         ,info.salary_date
+			                         ,info.pay_yn
+			                    from tb_salary_info info
+			                    <where>
+			                       <if test="(srcdate == null) or (srcdate.equals(''))">
+			                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+							       </if>
+							       <if test="(srcdate != null) and (!srcdate.equals(''))">
+					                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+					               </if>               
+					             </where>   
+			                   ) si on si.loginID = ui.loginID
+		<where>
+			year_pay IS NOT NULL
+			<if test="(srcdept != null) and (!srcdept.equals(''))">
+		       AND dept_cd = #{srcdept}     	
+			</if>              
+			<if test="(srcrank != null) and (!srcrank.equals(''))">
+		       AND rank_cd = #{srcrank}     	
+			</if>
+			<if test="(srcdate != null) and (!srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> #{srcdate}
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31'))
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+							and ( (ui.lved_date IS NULL) 
+								  )
+							)
+                    )
+	      	</if>                
+			<if test="(srcdate == null) or (srcdate.equals(''))">
+       	       and ui.st_date <![CDATA[<=]]> now()
+       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31')))
+               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') )
+                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') 
+                    		and (ui.lved_date IS NULL) )
+                    )
+	      	</if>
+	      	<if test="(srcName != null) and (!srcName.equals(''))">
+                and ui.name Like CONCAT('%', #{srcName}, '%')
+            </if>                
+            <if test=' "y".equals(srcyn) '>
+	            and si.pay_yn Like CONCAT('%', #{srcyn}, '%')
+            </if>                
+            <if test=' "w".equals(srcyn) '>
+	            and si.pay_yn IS NULL
+            </if>
+         </where>              
+	</select>
+	
+	<!-- 급여 저장 지출테이블로 -->
+	
+	<insert id="empsave_exp">
+   		<selectKey resultType="int" keyProperty="expno" order="BEFORE">
+			SELECT IFNULL(MAX(exp_no + 1), 1) 
+			FROM tb_expense
+		</selectKey>
+   		INSERT INTO tb_expense
+   		(
+   		   exp_no
+   		  ,laccount_cd	
+   		  ,account_cd	
+	      ,loginID
+	      ,exp_spent
+	      ,exp_yn
+	      ,yn_date
+	      ,exp_name
+   		) select 
+   			 #{expno} as exp_no
+   			,'2' as laccount_cd
+ 		    ,'201' as account_cd
+	        ,'admin' as loginID
+	        ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax as exp_spent
+	        ,'y' as exp_yn
+	        ,IF(#{srcdate} = '', DATE_FORMAT(now(), '%Y-%m-%d'), #{srcdate}) as yn_date
+	        ,#{userNm} as exp_name
+			from tb_userinfo ui
+				  left outer join (
+				              select nego.year_pay as year_pay
+				                    ,nego.year_pay/12 as month_pay
+				                    ,nego.year_pay/12*0.045 as ins_n
+				                    ,nego.year_pay/12*0.0343 as ins_h
+				                    ,nego.year_pay/12*0.008 as ins_e
+				                    ,nego.year_pay/12*0.0156 as ins_i
+				                    ,nego.year_pay/12*0.1 as tax
+				                    ,nego.loginID
+				                    ,nego.nego_date
+				              from tb_negotiation nego
+				              ) ng on ui.loginID = ng.loginID
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+				  left outer join (
+				                   select info.salary_no
+				                         ,info.loginID
+				                         ,info.salary_date
+				                         ,info.pay_yn
+				                    from tb_salary_info info
+				                    <where>
+				                       <if test="(srcdate == null) or (srcdate.equals(''))">
+				                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+								       </if>
+								       <if test="(srcdate != null) and (!srcdate.equals(''))">
+						                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+						               </if>               
+						             </where>   
+				                   ) si on si.loginID = ui.loginID
+			where ui.loginID = #{loginID}		
+    </insert>
+    
+    
+    
+    
+	<!-- 급여 저장 급여테이블로 -->
+	
+	<insert id="empsave">
+   		<selectKey resultType="int" keyProperty="salaryno" order="BEFORE">
+			SELECT IFNULL(MAX(salary_no + 1), 1) 
+			FROM tb_salary_info
+		</selectKey>
+   		INSERT INTO tb_salary_info
+   		(
+   			salary_no
+	      , loginID
+	      , national_ins
+	      , health_ins
+	      , industrial_ins
+	      , emp_ins
+	      , tax
+	      , salary_date
+	      , year_pay
+	      , salary_pay
+	      , real_pay
+	      , extra_pay
+	      , pay_yn
+   		) select 
+   			 #{salaryno} as salary_no
+   			,ui.loginID as loginID
+ 		    ,ng.ins_n as national_ins
+	        ,ng.ins_h as health_ins
+	        ,ng.ins_e as industrial_ins
+	        ,ng.ins_i as emp_ins
+	        ,ng.tax as tax
+	        ,IF(#{srcdate} = '', DATE_FORMAT(now(), '%Y-%m-%d'), #{srcdate})
+	        ,ng.year_pay as year_pay
+	        ,ng.month_pay as salary_pay
+	        ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax+ifnull(xp.cnt,'0') as real_pay
+	        ,ifnull(xp.cnt,'0') as extra_pay
+	        ,ifnull(si.pay_yn,'y') as pay_yn
+			from tb_userinfo ui
+				  left outer join (
+				              select nego.year_pay as year_pay
+				                    ,nego.year_pay/12 as month_pay
+				                    ,nego.year_pay/12*0.045 as ins_n
+				                    ,nego.year_pay/12*0.0343 as ins_h
+				                    ,nego.year_pay/12*0.008 as ins_e
+				                    ,nego.year_pay/12*0.0156 as ins_i
+				                    ,nego.year_pay/12*0.1 as tax
+				                    ,nego.loginID
+				                    ,nego.nego_date
+				              from tb_negotiation nego
+				              ) ng on ui.loginID = ng.loginID
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+				  left outer join (
+				                   select info.salary_no
+				                         ,info.loginID
+				                         ,info.salary_date
+				                         ,info.pay_yn
+				                    from tb_salary_info info
+				                    <where>
+				                       <if test="(srcdate == null) or (srcdate.equals(''))">
+				                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+								       </if>
+								       <if test="(srcdate != null) and (!srcdate.equals(''))">
+						                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+						               </if>               
+						             </where>   
+				                   ) si on si.loginID = ui.loginID
+			where ui.loginID = #{loginID}		
+    </insert>
+    
+    <!-- 급여 다중 저장 급여tb -->
+	<insert id="empsaveall">
+   		INSERT INTO tb_salary_info
+   		(
+   			salary_no
+	      , loginID
+	      , national_ins
+	      , health_ins
+	      , industrial_ins
+	      , emp_ins
+	      , tax
+	      , salary_date
+	      , year_pay
+	      , salary_pay
+	      , real_pay
+	      , extra_pay
+	      , pay_yn
+   		) select 
+   			 (select ifnull(max(salary_no),0) + (@rownum:=@rownum+1) 
+   			  from tb_salary_info,(select @ROWNUM:=0)TMP) as salary_no
+   			,ui.loginID as loginID
+ 		    ,ng.ins_n as national_ins
+	        ,ng.ins_h as health_ins
+	        ,ng.ins_e as industrial_ins
+	        ,ng.ins_i as emp_ins
+	        ,ng.tax as tax
+	        ,IF(#{srcdate} = '', DATE_FORMAT(now(), '%Y-%m-%d'), #{srcdate})
+	        ,ng.year_pay as year_pay
+	        ,ng.month_pay as salary_pay
+	        ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax+ifnull(xp.cnt,'0') as real_pay
+	        ,ifnull(xp.cnt,'0') as extra_pay
+	        ,ifnull(si.pay_yn,'y') as pay_yn
+			from tb_userinfo ui
+				  left outer join (
+				              select nego.year_pay as year_pay
+				                    ,nego.year_pay/12 as month_pay
+				                    ,nego.year_pay/12*0.045 as ins_n
+				                    ,nego.year_pay/12*0.0343 as ins_h
+				                    ,nego.year_pay/12*0.008 as ins_e
+				                    ,nego.year_pay/12*0.0156 as ins_i
+				                    ,nego.year_pay/12*0.1 as tax
+				                    ,nego.loginID
+				                    ,nego.nego_date
+				              from tb_negotiation nego
+				              ) ng on ui.loginID = ng.loginID
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+				  left outer join (
+				                   select info.salary_no
+				                         ,info.loginID
+				                         ,info.salary_date
+				                         ,info.pay_yn
+				                    from tb_salary_info info
+				                    <where>
+				                       <if test="(srcdate == null) or (srcdate.equals(''))">
+				                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+								       </if>
+								       <if test="(srcdate != null) and (!srcdate.equals(''))">
+						                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+						               </if>               
+						             </where>   
+				                   ) si on si.loginID = ui.loginID
+			<where>
+				pay_yn IS NULL
+				and year_pay IS NOT NULL
+				<if test="(srcdept != null) and (!srcdept.equals(''))">
+			       AND dept_cd = #{srcdept}     	
+				</if>              
+				<if test="(srcrank != null) and (!srcrank.equals(''))">
+			       AND rank_cd = #{srcrank}     	
+				</if>
+				<if test="(srcdate != null) and (!srcdate.equals(''))">
+	       	       and ui.st_date <![CDATA[<=]]> #{srcdate}
+	       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')))
+	               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31'))
+	                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+								and ( (ui.lved_date IS NULL) 
+									  )
+								)
+	                    )
+		      	</if>                
+				<if test="(srcdate == null) or (srcdate.equals(''))">
+	       	       and ui.st_date <![CDATA[<=]]> now()
+	       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31')))
+	               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') )
+	                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') 
+	                    		and (ui.lved_date IS NULL) )
+	                    )
+		      	</if>
+		      	<if test="(srcName != null) and (!srcName.equals(''))">
+	                and ui.name Like CONCAT('%', #{srcName}, '%')
+	            </if>           
+	         </where>		
+    </insert>
+    
+    
+    <!-- 급여 다중 저장 지출tb -->
+	<insert id="empsave_expall">
+   		INSERT INTO tb_expense
+   		(
+   		   exp_no
+   		  ,laccount_cd	
+   		  ,account_cd	
+	      ,loginID
+	      ,exp_spent
+	      ,exp_yn
+	      ,yn_date
+	      ,exp_name
+   		) select 
+			 (select ifnull(max(exp_no),0) + (@rownum:=@rownum+1) 
+   			  from tb_expense,(select @ROWNUM:=0)TMP) as exp_no
+   			,'2' as laccount_cd
+ 		    ,'201' as account_cd
+	        ,'admin' as loginID
+	        ,ng.month_pay-ng.ins_n-ng.ins_h-ng.ins_e-ng.ins_i-ng.tax as exp_spent
+	        ,'y' as exp_yn
+	        ,IF(#{srcdate} = '', DATE_FORMAT(now(), '%Y-%m-%d'), #{srcdate}) as yn_date
+	        ,#{userNm} as exp_name
+			from tb_userinfo ui
+				  left outer join (
+				              select nego.year_pay as year_pay
+				                    ,nego.year_pay/12 as month_pay
+				                    ,nego.year_pay/12*0.045 as ins_n
+				                    ,nego.year_pay/12*0.0343 as ins_h
+				                    ,nego.year_pay/12*0.008 as ins_e
+				                    ,nego.year_pay/12*0.0156 as ins_i
+				                    ,nego.year_pay/12*0.1 as tax
+				                    ,nego.loginID
+				                    ,nego.nego_date
+				              from tb_negotiation nego
+				              ) ng on ui.loginID = ng.loginID
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+				  inner join (select detail_code
+				                    ,group_code
+				                    ,detail_name
+				              from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd     
+			  left outer join (        SELECT sum(ex.incnt) as cnt
+								              ,ex.loginID
+								              ,ex.yn_date
+								              ,ex.exp_no
+								        from(
+									            select loginID
+									                  ,sum(exp_spent) as incnt
+									                  ,yn_date
+									                  ,exp_no
+									            from tb_expense exd
+									            group by  exd.loginID,exd.yn_date,exd.exp_yn
+									            HAVING exd.exp_yn = 'y'
+									            		<if test="(srcdate == null) or (srcdate.equals(''))"> 
+						                				  and exd.yn_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+										       			</if>
+										       			<if test="(srcdate != null) and (!srcdate.equals(''))">
+										                  and exd.yn_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+										                </if>  
+									           ) ex
+								        group by ex.loginID
+			                  ) xp on xp.loginID = ui.loginID
+				  left outer join (
+				                   select info.salary_no
+				                         ,info.loginID
+				                         ,info.salary_date
+				                         ,info.pay_yn
+				                    from tb_salary_info info
+				                    <where>
+				                       <if test="(srcdate == null) or (srcdate.equals(''))">
+				                	       info.salary_date between CONCAT(SUBSTRING(now(), 1, 8), '01') and CONCAT(SUBSTRING(now(), 1, 8), '31')
+								       </if>
+								       <if test="(srcdate != null) and (!srcdate.equals(''))">
+						                  and info.salary_date between CONCAT(SUBSTRING(#{srcdate}, 1, 8), '01') and CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31') 
+						               </if>               
+						             </where>   
+				                   ) si on si.loginID = ui.loginID
+			<where>
+				pay_yn IS NULL
+				and year_pay IS NOT NULL
+				<if test="(srcdept != null) and (!srcdept.equals(''))">
+			       AND dept_cd = #{srcdept}     	
+				</if>              
+				<if test="(srcrank != null) and (!srcrank.equals(''))">
+			       AND rank_cd = #{srcrank}     	
+				</if>
+				<if test="(srcdate != null) and (!srcdate.equals(''))">
+	       	       and ui.st_date <![CDATA[<=]]> #{srcdate}
+	       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')))
+	               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31'))
+	                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(#{srcdate}, 1, 8), '31')
+								and ( (ui.lved_date IS NULL) 
+									  )
+								)
+	                    )
+		      	</if>                
+				<if test="(srcdate == null) or (srcdate.equals(''))">
+	       	       and ui.st_date <![CDATA[<=]]> now()
+	       	       and (ui.ed_date IS NULL or (CONCAT(SUBSTRING(ui.ed_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31')))
+	               and ( (ui.lvst_date IS NULL or CONCAT(SUBSTRING(ui.lved_date, 1, 8), '31') <![CDATA[>=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') )
+	                    OR NOT (ui.lvst_date <![CDATA[<=]]> CONCAT(SUBSTRING(now(), 1, 8), '31') 
+	                    		and (ui.lved_date IS NULL) )
+	                    )
+		      	</if>
+		      	<if test="(srcName != null) and (!srcName.equals(''))">
+	                and ui.name Like CONCAT('%', #{srcName}, '%')
+	            </if>           
+	         </where>		
+    </insert>
+	
+	
+	<!-- 개인 급여목록 조회 -->
+	<!-- 급여목록에 userinfo를 right outer join해서 급여정보가 null 이어도 jsp화면에서 클릭한 개인정보 뿌려줌 -->
+	<select id="empOnelist" resultType="kr.happyjob.study.employee.model.EmpPaymentModel">
+		/*kr.happyjob.study.employee.dao.EmpPaymentDao.empOnelist*/
+		select si.salary_no as oneno
+			  ,si.loginID as oneID
+		      ,si.salary_date as onedate
+		      ,si.year_pay as oneypay
+		      ,si.salary_pay as onempay
+		      ,si.national_ins as onenins
+		      ,si.health_ins as onehins
+		      ,si.industrial_ins as oneiins
+		      ,si.emp_ins as oneeins
+		      ,si.tax as onetax
+		      ,si.extra_pay as oneextra
+		      ,si.real_pay as onerpay
+		      ,ui.emp_no as oneeno
+		      ,ui.name as onenm
+		      ,dc1.detail_name as onedept
+		      ,dc2.detail_name as onerank
+		from tb_salary_info si 
+		  	right outer join tb_userinfo ui on ui.loginID = si.loginID
+		  	inner join (select detail_code
+					                    ,group_code
+					                    ,detail_name
+					        from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+			inner join (select detail_code
+					                    ,group_code
+					                    ,detail_name
+					        from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd
+		where ui.loginID = #{sloginID}
+		LIMIT #{pageindex}, #{pageSize}	
+		
+	</select>	
+	
+	<!-- 개인 총 급여목록 조회 -->
+	<select id="cntempOnelist" resultType="int">
+		/*kr.happyjob.study.employee.dao.EmpPaymentDao.cntempOnelist*/
+		select COUNT(1) AS tot_cnt
+		from tb_salary_info si 
+		  	inner join tb_userinfo ui on ui.loginID = si.loginID
+		  	inner join (select detail_code
+					                    ,group_code
+					                    ,detail_name
+					        from tb_detail_code) dc1 on dc1.group_code = 'dept_cd' and dc1.detail_code = ui.dept_cd
+			inner join (select detail_code
+					                    ,group_code
+					                    ,detail_name
+					        from tb_detail_code) dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd
+		where si.loginID = #{sloginID}
+	</select>
+
+	
+			
+</mapper>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.BizPartnerDao">
+
+	<!-- 거래처 목록 조회 -->
+	<select id="clientlist" resultType="kr.happyjob.study.business.model.BizPartnerModel">
+		/*kr.happyjob.study.business.dao.BizPartnerDao.clientlist*/
+		select client_no
+              ,client_name
+              ,manager_name
+              ,manager_hp
+              ,manager_email
+              ,fax_tel
+              ,client_type
+ 		 from tb_client
+         <where>
+         	client_type = 1
+               <if test="(bpname != null) and (!bpname.equals(''))">
+                    and client_name Like CONCAT('%', #{bpname}, '%')
+               </if>
+          </where> 
+		ORDER BY client_no DESC
+		LIMIT #{pageindex}, #{pageSize}
+	</select>
+	
+	<!-- 거래처 목록 총 갯수 조회 -->
+	<select id="countclientlist" resultType="int">
+		/*kr.happyjob.study.hwang.dao.HnoticeDao.counthnoticelist*/
+		SELECT COUNT(1) AS bp_cnt
+         from tb_client    
+         <where>    
+         		client_type = 1
+               <if test="(bpname != null) and (!bpname.equals(''))">
+                    and client_name Like CONCAT('%', #{bpname}, '%')
+               </if>
+          </where>	
+	</select>
+	
+	<!-- 거래처 단건 조회 -->
+	<select id="clientdetail" resultType="kr.happyjob.study.business.model.BizPartnerModel">
+		/*kr.happyjob.study.business.dao.BizPartnerDao.clientdetail*/
+		select client_no 
+      		 , permit_no
+      		 , client_name
+      		 , manager_name
+      		 , zip_code
+      		 , addr
+      		 , det_addr
+      		 , manager_hp
+      		 , manager_email
+      		 , client_tel
+      		 , fax_tel
+      		 , client_type
+ 		  from tb_client
+ 		  <where>
+ 		  	and client_type = 1
+ 		  	<if test="client_no != null">
+ 		  	and client_no = #{client_no}
+ 		  	</if>
+ 		  	<if test="det_permit_no != null">
+ 		  	and permit_no = #{det_permit_no}
+ 		  	</if>
+ 		  </where>
+ 		  
+ 		  
+	</select>
+	
+	<!-- 신규 거래처 저장 -->
+	<insert id="clientsave">
+		<selectKey resultType="int" keyProperty="client_no" order="BEFORE">
+            select ifnull(max(client_no),0) + 1 from tb_client
+        </selectKey>
+        insert into tb_client
+                (
+                client_no
+              , permit_no
+              , client_type
+              , client_name
+              , zip_code
+              , addr
+              , det_addr
+              , manager_name
+              , manager_hp
+              , client_tel
+              , fax_tel
+              , manager_email
+                )
+                values
+                (
+                #{client_no}
+              , #{det_permit_no}
+              , 1
+              , #{det_client_name}
+              , #{det_zip_code}
+              , #{det_addr}
+              , #{det_det_addr}
+              , #{det_manager_name}
+              , #{det_manager_hp}
+              , #{det_client_tel}
+              , #{det_fax_tel}
+              , #{det_manager_email}
+                )
+	</insert>
+	
+	<!-- 기존 거래처 업데이트 -->
+	<update id="clientupdate">
+		update tb_client
+		   set  permit_no = #{det_permit_no}
+		      , client_no = #{client_no}
+  			  , client_name = #{det_client_name}
+     		  , zip_code = #{det_zip_code}
+     		  , addr = #{det_addr}
+     		  , det_addr = #{det_det_addr}
+     		  , manager_name = #{det_manager_name}
+    		  , manager_hp = #{det_manager_hp}
+    		  , client_tel = #{det_client_tel}
+   			  , manager_email = #{det_manager_email}
+   			  , fax_tel = #{det_fax_tel}
+		 where client_no = #{client_no}
+	</update>
+	
+	<!-- 기존 거래처 삭제-->
+	<delete id="clientdelete">
+		delete from tb_client
+		where client_no = #{client_no}
+	</delete>
+</mapper>

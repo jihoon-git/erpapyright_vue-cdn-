@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.EmpSalePlanDao">
+
+	<!-- 영업 계획 조회 리스트 -->
+	<select id="empsaleplanlist" resultType="kr.happyjob.study.business.model.EmpSalePlanModel">
+		/*kr.happyjob.study.business.dao.BmSalePlanDao.empsaleplanlist*/
+		select sp.plan_date
+		,ct.client_name
+		,dc.detail_name as mcname
+		,pdt.product_name as pdname
+		,pd.product_name
+		,sp.goal_amt
+		,sp.now_amt
+		from tb_salesplan sp
+		inner join tb_client ct ON ct.client_no =
+		sp.client_no
+		inner join tb_detail_code dc ON
+		dc.group_code='lcategory_cd' and
+		dc.detail_code=sp.lcategory_cd
+		inner
+		join tb_product_type pdt on pdt.mcategory_cd = sp.mcategory_cd and
+		pdt.lcategory_cd = sp.lcategory_cd
+		inner join tb_product pd on
+		pd.product_no = sp.product_no
+		<where>
+			<if test="(clientname != null) and (!clientname.equals(''))">
+				and ct.client_no <![CDATA[=]]>
+				#{clientname}
+			</if>
+			<if test="(stdate != null) and (!stdate.equals(''))">
+				and sp.plan_date <![CDATA[>=]]>
+				#{stdate}
+			</if>
+			<if test="(eddate != null) and (!eddate.equals(''))">
+				and sp.plan_date <![CDATA[<=]]>
+				#{eddate}
+			</if>
+			<if test="(lcategory != null) and (!lcategory.equals(''))">
+				and pd.lcategory_cd <![CDATA[=]]>
+				#{lcategory}
+			</if>
+			<if test="(mcategory != null) and (!mcategory.equals(''))">
+				and pd.mcategory_cd <![CDATA[=]]>
+				#{mcategory}
+			</if>
+			<if test="(productname != null) and (!productname.equals(''))">
+				and pd.product_no <![CDATA[=]]>
+				#{productname}
+			</if>
+			and sp.loginID <![CDATA[=]]>
+			#{loginID}
+		</where>
+		ORDER BY sp.plan_no desc
+		LIMIT #{pageIndex},
+		#{pageSize}
+	</select>
+
+
+	<!-- 영업 계획 리스트 카운트 -->
+	<select id="countempsaleplan" resultType="int">
+		/*kr.happyjob.study.business.dao.BmSalePlanDao.countempsaleplan*/
+		select count(1) as tot_cnt
+		from tb_salesplan sp
+		inner join tb_client ct
+		ON ct.client_no = sp.client_no
+		inner join tb_detail_code dc ON
+		dc.group_code='lcategory_cd' and dc.detail_code=sp.lcategory_cd
+		inner
+		join tb_product_type pdt on pdt.mcategory_cd = sp.mcategory_cd and
+		pdt.lcategory_cd = sp.lcategory_cd
+		inner join tb_product pd on
+		pd.product_no = sp.product_no
+		<where>
+			<if test="(clientname != null) and (!clientname.equals(''))">
+				and ct.client_no <![CDATA[=]]>
+				#{clientname}
+			</if>
+			<if test="(stdate != null) and (!stdate.equals(''))">
+				and sp.plan_date <![CDATA[>=]]>
+				#{stdate}
+			</if>
+			<if test="(eddate != null) and (!eddate.equals(''))">
+				and sp.plan_date <![CDATA[<=]]>
+				#{eddate}
+			</if>
+			<if test="(lcategory != null) and (!lcategory.equals(''))">
+				and pd.lcategory_cd <![CDATA[=]]>
+				#{lcategory}
+			</if>
+			<if test="(mcategory != null) and (!mcategory.equals(''))">
+				and pd.mcategory_cd <![CDATA[=]]>
+				#{mcategory}
+			</if>
+			<if test="(productname != null) and (!productname.equals(''))">
+				and pd.product_no <![CDATA[=]]>
+				#{productname}
+			</if>
+			and sp.loginID <![CDATA[=]]>
+			#{loginID}
+		</where>
+	</select>
+
+
+	<!-- 영업계획 저장 -->
+	<insert id="newempsaleplan">
+		<selectKey resultType="int" keyProperty="planno" order="BEFORE">
+			select ifnull(max(plan_no),0) + 1 from tb_salesplan
+		</selectKey>
+		insert into tb_salesplan
+		(
+		plan_no
+		,plan_date
+		,now_amt
+		,mcategory_cd
+		,loginID
+		,lcategory_cd
+		,goal_date
+		,goal_amt
+		,client_no
+		,product_no
+		) values
+		(
+		#{planno}
+		,#{plandate}
+		,0
+		,#{mcategory}
+		,#{loginID}
+		,#{lcategory}
+		,#{goaldate}
+		,#{amount}
+		,#{client}
+		,#{product}
+		)
+	</insert>
+	<!-- 영업계획 번호 체크 -->
+	<select id="plannocheck" resultType="int">
+		/*kr.happyjob.study.business.dao.BmSalePlanDao.plannocheck*/
+		select ifnull(max(plan_no), 0) from tb_salesplan
+		<where>
+		product_no <![CDATA[=]]> #{product}
+		and lcategory_cd <![CDATA[=]]> #{lcategory}
+		and mcategory_cd <![CDATA[=]]> #{mcategory}
+		and client_no <![CDATA[=]]> #{client}
+		and plan_date <![CDATA[<=]]> #{plandate}
+		and goal_date <![CDATA[>=]]> #{plandate}
+		</where>
+	</select>
+
+</mapper>

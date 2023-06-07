@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.OEManagementSeDao">
+
+	<!-- 수주 목록 조회 -->
+	<select id="oEManagementList" resultType="kr.happyjob.study.business.model.OEManagementModel">
+		/*kr.happyjob.study.business.dao.OEManagementDao.oEManagementDaoList*/
+		select ct.estimate_cd as estimate_cd
+		      ,ct.order_cd as order_cd
+		      ,cl.client_name as client_name
+		      ,po.product_no as product_no
+		      ,po.product_name as product_name
+		      ,ct.product_amt as product_amt
+		      ,ct.tax as tax
+		      ,ct.price as price
+		      ,ct.amt_price as amt_price
+		      ,ct.total_price as total_price
+		  from tb_contract ct
+		       inner join tb_client cl on ct.client_no = cl.client_no
+		       inner join tb_product po on ct.lcategory_cd = po.lcategory_cd and ct.mcategory_cd = po.mcategory_cd and ct.product_no = po.product_no
+		<where>
+			<if test="(contractType != null)">
+				and contract_type = #{contractType} and ct.state = 'N'
+			</if>
+			<if test="(contractType == null)">
+				and contract_type = '2'
+			</if>
+			<if test="(client_no != null) and (!client_no.equals(''))">
+				and ct.client_no =#{client_no}
+			</if>
+			<if test="(srcsdate != null) and (!srcsdate.equals(''))">
+				 and ct.contract_date <![CDATA[>=]]> #{srcsdate}
+			 </if>
+			 <if test="(srcedate != null) and (!srcedate.equals(''))">
+				 and ct.contract_date <![CDATA[<=]]> #{srcedate}
+			 </if>
+		</where>
+		<if test="(contractType != null)">
+			group by ct.estimate_cd
+		</if>
+		order by ct.contract_no DESC
+		<if test="(pageindex != null) and (pageSize != null)">
+			LIMIT #{pageindex}, #{pageSize}
+		</if>
+		
+		
+	</select>
+
+	<!-- 수주 목록 총갯수 조회 -->
+	<select id="oEManagementListCnt" resultType="int">
+		/*kr.happyjob.study.business.dao.OEManagementDao.oEManagementListCnt*/
+		select count(con.contract_no) total_cnt       
+ 		  from (
+ 		  		select ct.contract_no contract_no
+ 				  from tb_contract ct
+				       inner join tb_client cl on ct.client_no = cl.client_no
+				       inner join tb_product po on ct.lcategory_cd = po.lcategory_cd and ct.mcategory_cd = po.mcategory_cd and ct.product_no = po.product_no
+				<where>
+					and ct.contract_type = '2'
+					<if test="(client_no != null) and (!client_no.equals(''))">
+						and ct.client_no =#{client_no}
+					</if>
+					<if test="(srcsdate != null) and (!srcsdate.equals(''))">
+						 and ct.contract_date <![CDATA[>=]]> #{srcsdate}
+					 </if>
+					 <if test="(srcedate != null) and (!srcedate.equals(''))">
+						 and ct.contract_date <![CDATA[<=]]> #{srcedate}
+					 </if>
+				</where>
+				order by ct.contract_no DESC
+ 		  		)con
+		
+	</select>
+	
+	<!-- 수주 단건 조회 -->
+	<select id="contractDetaile" resultType="kr.happyjob.study.business.model.ContractDetaileModel">
+		/*kr.happyjob.study.business.dao.OEManagementDao.contractDetaile*/
+		select ct.contract_no as contract_no
+			  ,ct.estimate_cd as estimate_cd
+		      ,ct.order_cd as order_cd
+		      ,cl.client_no as client_no
+		      ,cl.client_name as client_name 
+		      ,cl.permit_no as clint_permit_no
+		      ,cl.manager_name as clint_manager_name
+		      ,cl.addr as clint_addr 
+		      ,cl.det_addr as clint_det_addr
+		      ,cl.manager_hp as clint_manager_hp
+		      ,cli.home_name home_name
+		      ,cli.home_permit_no home_permit_no
+		      ,cli.home_manager_name home_manager_name
+		      ,cli.home_addr home_addr
+		      ,cli.home_det_addr home_det_addr
+		      ,cli.home_manager_hp home_manager_hp
+		      ,dc.detail_code as lproduct_cd
+	          ,dc.detail_name as lproduct_name
+	          ,py.mcategory_cd as mproduct_cd
+	          ,py.product_name as mproduct_name
+	          ,po.product_no as product_no
+		      ,po.product_name as product_name
+		      ,po.stock as stock
+		      ,ct.product_amt as product_amt
+		      ,ct.tax as tax
+		      ,ct.price as price
+		      ,ct.amt_price as amt_price
+		      ,ct.total_price as total_price
+		  from tb_contract ct
+		       left outer join tb_client cl on ct.client_no = cl.client_no and cl.client_type = '1'
+		       inner join tb_detail_code dc on dc.group_code = "lcategory_cd" and dc.detail_code = ct.lcategory_cd
+		       inner join tb_product_type py on ct.mcategory_cd = py.mcategory_cd
+		       inner join tb_product po on ct.lcategory_cd = po.lcategory_cd and ct.mcategory_cd = po.mcategory_cd and ct.product_no = po.product_no,
+		       (
+		        select cli.client_name home_name
+		              ,cli.permit_no home_permit_no
+		              ,cli.manager_name home_manager_name 
+		              ,cli.addr home_addr
+		              ,cli.det_addr home_det_addr
+		              ,cli.manager_hp home_manager_hp
+		          from  tb_client cli
+		         where cli.client_type = '0'
+		       ) cli
+		<where>
+			<if test="order_cd != null and estimate_cd == null">
+				and contract_type = '2' and ct.order_cd = #{order_cd} and ct.product_no = #{product_no}
+			</if>
+			<if test="order_cd == null and estimate_cd != null">
+				and contract_type = '1' and ct.estimate_cd = #{estimate_cd} and ct.state = 'N'
+			</if>
+		</where>
+		 group by ct.product_no, ct.order_cd
+		 order by ct.contract_no DESC
+	</select>
+	
+	<!-- selectKey 생성 -->
+	<select id="selectKey" resultType="kr.happyjob.study.business.model.ContractDetaileModel"> 
+	   	SELECT IFNULL(MAX(contract_no),0) +#{index} as contract_no
+	   		  ,CONCAT('O_',IFNULL(MAX(cast(SUBSTR(order_cd, 3)as UNSIGNED)),1)+1) as order_cd
+		  FROM tb_contract
+	</select>
+	
+	<!-- 수주 등록 -->
+	<insert id="orderSave">
+	/*kr.happyjob.study.business.dao.OEManagementDao.orderSave*/
+		insert
+		  into tb_contract
+		      (
+		       contract_no
+		      ,order_cd
+		      ,estimate_cd
+		      ,loginID 
+		      ,client_no 
+		      ,product_no
+		      ,lcategory_cd
+		      ,mcategory_cd
+		      ,contract_date 
+		      ,product_amt
+		      ,tax
+		      ,price
+		      ,amt_price
+		      ,total_price
+		      ,contract_type
+		      ,laccount_cd
+		      ,account_cd
+		      )
+		values (
+		        #{contract_no}
+		        ,#{order_cd}
+		        ,#{estimate_cd}
+		        ,#{loginID}
+		        ,#{popClient_no}
+		        ,#{product_no}
+		        ,#{lProduct_no}
+		        ,#{midProduct_no}
+		        ,DATE_FORMAT(now(), '%Y-%m-%d')
+		        ,#{productAmtVal}
+		        ,(#{price}*#{productAmtVal})*0.1
+		        ,#{price}
+		        ,#{price}*#{productAmtVal}
+		        ,(#{price}*#{productAmtVal})+(#{price}*#{productAmtVal}*0.1)
+		        ,'2'
+		        ,'6'
+		        ,'601'
+		        )
+	</insert>
+	
+	<!-- 계약서 상태 수정 -->
+	<update id="contractUpdate">
+		update tb_contract
+		   set state = 'Y'
+		 where estimate_cd = #{estimate_cd};
+	</update>
+
+	<!-- 제품 재고 수정 -->
+	<update id="prcductUpdate">
+		update tb_product
+		   set stock = stock-#{productAmtVal}
+		 where product_no = #{product_no} and lcategory_cd = #{lProduct_no} and mcategory_cd = #{midProduct_no}
+	</update>
+
+	<!-- 영업실적 수정 --> 
+	<update id="bSalePlanUpdate">
+		update tb_salesplan
+		   set now_amt = now_amt+#{productAmtVal}
+		 where product_no = 1 and client_no = 2 and plan_date <![CDATA[<=]]> DATE_FORMAT(NOW(),'%Y-%m-%d') and goal_date <![CDATA[>=]]> DATE_FORMAT(NOW(),'%Y-%m-%d')
+	</update>
+	
+	<!-- 회계정보 등록 -->
+	<insert id="accuntInfo">
+	 <selectKey keyProperty="account_no" resultType="int" order="BEFORE"> 
+	   	SELECT IFNULL(MAX(account_no),0)+#{index}
+				  FROM tb_account_info
+	  </selectKey>
+		insert
+		  into tb_account_info
+		       (
+		        account_no
+		       ,order_cd
+		       ,exp_no
+		       ,contract_no
+		       ,account_pay
+		       )
+		values (
+		        #{account_no}
+		       ,#{order_cd}
+		       ,null
+		       ,#{contract_no}
+		       ,(#{price}*#{productAmtVal})+(#{price}*#{productAmtVal}*0.1)
+		        )
+	</insert>
+</mapper>

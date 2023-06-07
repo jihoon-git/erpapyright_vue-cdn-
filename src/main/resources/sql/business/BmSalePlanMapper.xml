@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.happyjob.study.business.dao.BmSalePlanDao">
+
+	<!-- 영업실적 조회 리스트 -->
+	<select id="bmsaleplanlist" resultType="kr.happyjob.study.business.model.BmSalePlanModel">
+		/*kr.happyjob.study.business.dao.BmSalePlanDao.bmsaleplanlist*/
+		select
+       sp.plan_no,
+	   ui.emp_no,
+       ui.name,
+       pd.product_no,
+       pd.product_name,
+        ct.client_name,
+       sp.product_no,
+       sp.plan_date,
+       sp.goal_amt,
+       sp.now_amt,
+       truncate((sp.now_amt / sp.goal_amt) * 100,0) as acvm_rate
+			from tb_salesplan sp
+      inner join tb_userinfo ui on ui.loginID = sp.loginID
+      inner join tb_product pd on pd.product_no = sp.product_no
+       inner join tb_client ct on ct.client_no = sp.client_no
+      <where>
+      	<if test="(empname != null) and (!empname.equals(''))">
+      	and ui.name Like CONCAT('%', #{empname}, '%')
+      	</if>
+      	<if test="(searchdate != null) and (!searchdate.equals(''))">
+      		and sp.plan_date <![CDATA[>=]]> #{searchdate}
+      	</if>
+      	<if test="(lcategory != null) and (!lcategory.equals(''))">
+      		and pd.lcategory_cd <![CDATA[=]]> #{lcategory}
+      	</if>
+      	<if test="(mcategory != null) and (!mcategory.equals(''))">
+      		and pd.mcategory_cd <![CDATA[=]]> #{mcategory}
+      	</if>
+      	<if test="(productname != null) and (!productname.equals(''))">
+      		and pd.product_no <![CDATA[=]]> #{productname}
+      	</if>
+      	<if test="(loginId != null) and (!loginId.equals(''))">
+      		and ui.loginID <![CDATA[=]]> #{loginId}
+      	</if>
+      </where>
+      ORDER BY sp.plan_no
+	  LIMIT #{pageindex}, #{pageSize}
+		
+	</select>
+	
+	
+	<!-- 영업실적 조회 리스트 카운트 -->
+	<select id="countbmsaleplan" resultType="int">
+		/*kr.happyjob.study.business.dao.BmSalePlanDao.countbmsaleplan*/
+		select count(1) as tot_cnt
+		from tb_salesplan sp
+      inner join tb_userinfo ui on ui.loginID = sp.loginID
+      inner join tb_product pd on pd.product_no = sp.product_no
+      inner join tb_client ct on ct.client_no = sp.client_no
+		<where>
+      	<if test="(empname != null) and (!empname.equals(''))">
+      	and ui.name Like CONCAT('%', #{empname}, '%')
+      	</if>
+      	<if test="(searchdate != null) and (!searchdate.equals(''))">
+      		and sp.plan_date <![CDATA[>=]]> #{searchdate}
+      	</if>
+      	<if test="(lcategory != null) and (!lcategory.equals(''))">
+      		and pd.lcategory_cd <![CDATA[=]]> #{lcategory}
+      	</if>
+      	<if test="(mcategory != null) and (!mcategory.equals(''))">
+      		and pd.mcategory_cd <![CDATA[=]]> #{mcategory}
+      	</if>
+      	<if test="(productname != null) and (!productname.equals(''))">
+      		and pd.product_no <![CDATA[=]]> #{productname}
+      	</if>
+      	<if test="(loginId != null) and (!loginId.equals(''))">
+      		and ui.loginID <![CDATA[=]]> #{loginId}
+      	</if>
+      </where>
+	</select>
+	
+</mapper>
