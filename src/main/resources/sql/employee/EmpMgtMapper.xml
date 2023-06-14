@@ -10,7 +10,7 @@
 			   ,loginID
 		       ,name
 		       ,ifnull(dcd.detail_name, '미발령') as dept_name
-		       ,dcr.detail_name as rank_name
+		       ,ifnull(dcr.detail_name, '-') as rank_name
 		       ,st_date
 		       ,dcs.detail_name as status_name
 		       ,ed_date
@@ -20,7 +20,7 @@
        		   ,status_cd
 		  from tb_userinfo ui
 		    left outer join tb_detail_code dcd on dcd.group_code = 'dept_cd' and dcd.detail_code = ui.dept_cd
-		    inner join tb_detail_code dcr on dcr.group_code = 'rank_cd' and dcr.detail_code = ui.rank_cd
+		    left outer join tb_detail_code dcr on dcr.group_code = 'rank_cd' and dcr.detail_code = ui.rank_cd
 		    inner join tb_detail_code dcs on dcs.group_code = 'status_cd' and dcs.detail_code = ui.status_cd
     	<where>
     		<if test = "(statusCd != null) and (!statusCd.equals(''))">

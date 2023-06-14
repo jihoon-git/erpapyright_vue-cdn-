@@ -41,7 +41,7 @@ click-able rows
 			clientList();
 			
 			// 수주서 목록 조회
-			vuearea.fn_oEManagemenSearch();
+			oEManagemenSearch();
 			
 			estimateDetaile2();
 			
@@ -62,11 +62,9 @@ click-able rows
 			        srcedate  : '',
 			        client_no : '',
 			        searchKey : '',
+			        clickBtn : '',
 				},
 				methods : {
-					fn_oEManagemenSearch : function(){
-						oEManagemenSearch();
-					},
 					fn_contractDetaile : function(order_cd, product_no){
 						contractDetaile(order_cd, product_no);
 					},
@@ -134,25 +132,45 @@ click-able rows
 			
 	}
 		
+		/* 조회 버튼을 눌렀을 때 실행되는 함수 */
+		function fn_searchKey(){
+			vuearea.searchKey=''; //검색후 검색한것 초기화 용도
+			vuearea.searchKey='Z';
+			oEManagemenSearch();
+		}
+		
 		/* 수주리스트 검색 및 조회 */
-		function oEManagemenSearch(cpage, srcsdate, srcedate, client_no){
+		function oEManagemenSearch(cpage){
 			
 			cpage = cpage || 1;
-			srcsdate = srcsdate || vuearea.srcsdate;
-			srcedate = srcedate || vuearea.srcedate;
-			client_no = client_no || vuearea.client_no;
-			
-			if( vuearea.srcsdate !="" && vuearea.srcedate !="" && vuearea.srcsdate > vuearea.srcedate){
-				alert("검색 날짜를 확인해 주세요.");
-			} else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      {
+				
+			if(vuearea.searchKey=='Z'){ // 검색 버튼을 눌렀을 경우
+				
+				if(vuearea.srcsdate!= '' && vuearea.srcedate!= ''){
+					if(vuearea.srcsdate > vuearea.srcedate){
+						alert("종료일이 시작일 보다 빠를 수 없습니다.");
+						return false;
+					}
+				}
+				
+				// 검색버튼을 눌렀을 경우 검색조건, 검색어도 같이 넘겨준다
 				var param = {
 						pageSize : vuearea.pageSize,
 						cpage : cpage,
 						srcsdate : vuearea.srcsdate,
 						srcedate : vuearea.srcedate,
 						client_no : vuearea.client_no
-				}
+					}
 				
+			} else {
+				// 검색버튼을 누르지 않았을 경우 param 값으로 page size와 cpage만 넘겨준다
+				var param = {
+						pageSize : vuearea.pageSize,
+						cpage : cpage,
+				}
+			}
+			
+		
 				var oEManagementListCallback = function(data){
 					// console.log(JSON.stringify(data));
 					
@@ -163,10 +181,9 @@ click-able rows
 	
 					vuearea.oEManagementPagination = paginationHtml;
 				}
-				
 				callAjax("/business/vueOeManagementList.do", "post", "json", "false", param, oEManagementListCallback);
-			}
-		};
+		
+		}
 		
 		/* 팝업창 닫기 */
 		function closePop() {
@@ -413,7 +430,7 @@ click-able rows
 	<div id="mask"></div>
 
 	<div id="wrap_area">
-	<input type="hidden" id="searchKey" name="searchKey" v-model="searchKey"/>	
+	<input type="hidden" id="searchKey" name="searchKey" v-model="searchKey"/>
 
 		<h2 class="hidden">header 영역</h2>
 		<jsp:include page="/WEB-INF/view/common/header.jsp"></jsp:include>
@@ -443,7 +460,7 @@ click-able rows
 							</br>
 							거래처명
 							<select id="client_no" name="client_no" v-model="client_no"></select>
-							<a	class="btnType blue" href="javascript:oEManagemenSearch();" name="modal"><span>조회</span></a>
+							<a	class="btnType blue" href="" @click.prevent="fn_searchKey()" name="modal"><span>조회</span></a>
 							</span>
 						</p>
 							<a	class="btnType blue" href="" @click.prevent="fn_insertContract()" name="modal" style="margin-left: 905px;"><span>수주서 신규등록</span></a>

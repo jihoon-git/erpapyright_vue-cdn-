@@ -53,6 +53,20 @@ public class ComnCodController {
 
 		return "system/comncod";
 	}
+	/**
+	 * 공통코드 관리 초기화면 vue
+	 */
+	@RequestMapping("vueComnCodMgr.do")
+	public String VueInitComnCod(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".initComnCod");
+		logger.info("   - paramMap : " + paramMap);
+		
+		logger.info("+ End " + className + ".initComnCod");
+		
+		return "system/vueComnCod";
+	}
 	
 	
 	/**
@@ -91,7 +105,7 @@ public class ComnCodController {
 	}	
 
 	/**
-	 * 공통 그룹 코드 목록 조회
+	 * 공통 그룹 코드 목록 조회 vue
 	 */
 	@RequestMapping("vueListComnGrpCod.do")
 	@ResponseBody

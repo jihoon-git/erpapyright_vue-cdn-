@@ -55,6 +55,27 @@ public class EmpPayHistController {
 
 		return "employee/empPayment/empPayHist";
 	}
+	/**
+	 * 급여지급 초기화면 vue
+	 */
+	@RequestMapping("vueEmpPayHist.do")
+	public  String  vueEmpPayHist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+		HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".empPayHist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		
+		///Map<String, Object> resultMap = new HashMap<String, Object>();
+		//resultMap.put("loginId", session.getAttribute("loginId"));
+		
+		logger.info("+ End " + className + ".empPayHist");
+		
+		return "employee/empPayment/vueEmpPayHist";
+	}
 	
 	
 	/**
@@ -90,6 +111,40 @@ public class EmpPayHistController {
 	}
 	
 	/**
+	 * 개인급여 목록화면 vue
+	 */
+		
+	  	@RequestMapping("vueEmpPayHistlist.do")
+		@ResponseBody
+		public Map<String, Object> vueEmpPayHistlist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+		HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".empPayHistlist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		paramMap.put("loginId", (String) session.getAttribute("loginId"));
+		
+		// 페이징 처리
+	    int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<EmpPayHistModel> empHislist = empPayHistService.empHislist(paramMap);
+		int cntempHislist = empPayHistService.cntempHislist(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("empHislist", empHislist);
+		resultMap.put("cntempHislist", cntempHislist);
+		
+		logger.info("+ End " + className + ".empPayHistlist");
+
+		return resultMap;
+	}
+	
+	/**
 	 * 개인급여 상세조회
 	 */
 	@RequestMapping("empPayHistdetail.do")
@@ -99,6 +154,8 @@ public class EmpPayHistController {
 		
 		logger.info("+ Start " + className + ".empPayHistdetail");
 		logger.info("   - paramMap : " + paramMap);
+		
+		paramMap.put("loginId", (String) session.getAttribute("loginId"));
 		
 		EmpPayHistModel empHisdetail = empPayHistService.empHisdetail(paramMap);
 		
@@ -111,12 +168,5 @@ public class EmpPayHistController {
 
 		return returnmap;
 	}
-	
-	
-	
-		
-		
-
-
 	
 }

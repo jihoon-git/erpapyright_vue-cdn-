@@ -58,6 +58,25 @@ public class TaApproveController {
 		return "employee/taapprove/taapprove";		///꼭 적어 줘야함!!
 	}
 	
+	/**
+	 * 근태 관리 초기화면
+	 */
+	@RequestMapping("vueTaapprove.do")
+	public String vueTaapprove(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".taapprove");  ///꼭 적어 줘야함!!
+		logger.info("   - paramMap : " + paramMap);
+		
+//		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+//		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+//		model.addAttribute("userType", (String) session.getAttribute("userType"));
+		
+		logger.info("+ End " + className + ".taapprove");  ///꼭 적어 줘야함!!
+		
+		return "employee/taapprove/vueTaapprove";		///꼭 적어 줘야함!!
+	}
+	
 	
 	
 	/**
@@ -153,5 +172,46 @@ public class TaApproveController {
 
 		return returnmap;
 	}			
+	
+	/**
+	 * 근태 관리 목록 조회
+	 */
+	@RequestMapping("taapprovelistvue.do")
+	@ResponseBody
+	public Map<String, Object> taapprovelistvue(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".taapprovelist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		// 1     0
+		// 2     10
+		// 3     20		
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));	//paramMap.get("pageSize");페이지를  숫자로 바꾸준거임
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));	//paramMap.get("cpage"); 를 페이지를  숫자로 바꾸준거임
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<TaApproveModel> taapprovelist = taApproveService.taapprovelist(paramMap);
+		
+		int counttaApprovelist = taApproveService.counttaApprovelist(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		//model.addAttribute("taapprovelist", taapprovelist);
+		//model.addAttribute("counttaApprovelist", counttaApprovelist);
+		
+		resultMap.put("taapprovelist", taapprovelist);
+		resultMap.put("counttaApprovelist", counttaApprovelist);
+		
+		logger.info("+ End " + className + ".taapprovelist");
+
+		return resultMap;
+	}	
+	
+	
 	
 }

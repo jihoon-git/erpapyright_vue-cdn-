@@ -54,6 +54,23 @@ public class DeptMgrController {
 
 		return "system/deptMgr/deptMgr";
 	}
+	/**
+	 * 부서 관리 초기화면 vue
+	 */
+	@RequestMapping("vueDeptMgr.do")
+	public String vueDeptMgr(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".deptMgr");
+		logger.info("   - paramMap : " + paramMap);
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		
+		logger.info("+ End " + className + ".deptMgr");
+
+		return "system/deptMgr/vueDeptMgr";
+	}
 	
 	// 목록조회
 	@RequestMapping("deptlist.do")
@@ -86,6 +103,43 @@ public class DeptMgrController {
 		return "system/deptMgr/deptList";
 	}
 	
+	// 목록조회 vue : callAjax string to json
+		@ResponseBody
+		@RequestMapping("vueDeptlist.do")
+		public Map<String, Object>  vueDeptlist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("+ Start " + className + ".deptlist");
+			logger.info("   - paramMap : " + paramMap);
+			
+			// 1     0
+			// 2     10
+			// 3     20		
+			
+			int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+			int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+			int pageindex = (cpage - 1) * pageSize;
+			
+			paramMap.put("pageindex", pageindex);
+			paramMap.put("pageSize", pageSize);
+			
+			List<DeptMgrModel> deptlist = deptMgrService.deptlist(paramMap);
+			
+			int countdeptlist = deptMgrService.countdeptlist(paramMap);
+			
+			model.addAttribute("deptlist", deptlist);
+			model.addAttribute("countdeptlist", countdeptlist);
+			
+//			return json 
+			Map<String, Object> returnmap = new HashMap<String, Object>();
+			returnmap.put("deptlist", deptlist);
+			returnmap.put("countdeptlist", countdeptlist);
+			
+			logger.info("+ End " + className + ".deptlist");
+
+			return returnmap;
+		}
+		
 	/*부서 정보 저장*/
 	@RequestMapping("deptsave.do")
 	@ResponseBody

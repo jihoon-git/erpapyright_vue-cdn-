@@ -42,7 +42,7 @@ public class BmDvController {
 	 * 지출결의서 초기 화면
 	 */
 	@RequestMapping("bmDv.do")
-	public String hnotice(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+	public String bmDv(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
 			HttpServletResponse response, HttpSession session) throws Exception {
 
 		logger.info("+ Start " + className + ".bmDv");
@@ -56,6 +56,25 @@ public class BmDvController {
 
 		return "accounting/bmDv/bmDv";
 	}
+	
+	/**
+	 * Vue 지출결의서 초기 화면
+	 */
+	@RequestMapping("vueBmDv.do")
+	public String vueBmDv(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+
+		logger.info("+ Start " + className + ".vueBmDv");
+		logger.info("   - paramMap : " + paramMap);
+
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		model.addAttribute("userType", (String) session.getAttribute("userType"));
+
+		logger.info("+ End " + className + ".vueBmDv");
+
+		return "accounting/bmDv/vueBmDv";
+	}	
 
 	/**
 	 * 지출결의서 총 리스트
@@ -85,6 +104,41 @@ public class BmDvController {
 
 		return "accounting/bmDv/bmDvlist";
 	}
+	
+	/**
+	 * Vue 지출결의서 총 리스트
+	 */
+	@RequestMapping("vueExpenselist.do")
+	@ResponseBody
+	public Map<String, Object> vueExpenselist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+
+		logger.info("+ Start " + className + ".vueExpenselist");
+		logger.info("   - paramMap : " + paramMap);
+
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageIndex = (cpage - 1) * pageSize;
+
+		paramMap.put("pageSize", pageSize);
+		paramMap.put("cpage", cpage);
+		paramMap.put("pageIndex", pageIndex);
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+
+		List<BmDvModel> expenselist = bmdvservice.expenselist(paramMap);
+		int countexpenselist = bmdvservice.countexpenselist(paramMap);
+
+		resultMap.put("expenselist", expenselist);
+		resultMap.put("countexpenselist", countexpenselist);
+		resultMap.put("loginId", (String) session.getAttribute("loginId"));
+		resultMap.put("userNm", (String) session.getAttribute("userNm"));
+		resultMap.put("userType",(String) session.getAttribute("userType"));
+		
+		
+		logger.info("+ End " + className + ".vueExpenselist");
+
+		return resultMap;
+	}	
 
 	/**
 	 * 지출결의서 저장, 수정, 삭제

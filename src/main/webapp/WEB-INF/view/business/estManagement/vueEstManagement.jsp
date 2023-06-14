@@ -161,13 +161,13 @@
 		// param과 callback 지정
 		if(vuearea.clickBtn=='Z'){
 			
-			if(vuearea.consdate <= vuearea.conedate){
-			 }else{
-				alert('검색 시작 일을 확인해주세요');
-				return false;
+			if(vuearea.consdate!= '' && vuearea.conedate!= ''){
+				if(vuearea.consdate > vuearea.conedate){
+					alert("종료일이 시작일 보다 빠를 수 없습니다.");
+					return false;
+				}
 			}
-		
-			
+
 			var param = { // 컨트롤러로 넘겨줄 이름 : 보내줄값
 					clientNameSearch : vuearea.clientNameSearch,
 					consdate : vuearea.consdate,

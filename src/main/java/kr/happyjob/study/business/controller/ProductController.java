@@ -162,4 +162,134 @@ public class ProductController {
 		return resultMap;
 	}
 	
+	
+	
+	
+	/** vue
+	 * 회계전표 초기화면
+	 */
+	@RequestMapping("vueProduct.do")
+	public String vueProduct(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".vueProduct");
+		logger.info("   - paramMap : " + paramMap);
+		
+		logger.info("+ End " + className+".vueProduct");
+
+		return "business/product/vueProduct";
+	}
+	
+	/**
+	 * 제품 리스트 
+	 */
+	@RequestMapping("vueProductList.do")
+	@ResponseBody
+	public Map<String, Object> vueProductList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".vueProductList");
+		logger.info("   - paramMap : " + paramMap+".vueProductList");
+		
+		
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));
+		int pageindex = (cpage-1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<ProductModel> productList = productService.productList(paramMap);
+		
+		int totalCnt = productService.productListCnt(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		resultMap.put("productList", productList);
+		resultMap.put("totalCnt", totalCnt);
+		resultMap.put("userNm", (String)session.getAttribute("userNm"));
+		resultMap.put("loginId", (String)session.getAttribute("loginId"));
+		
+		logger.info("+ End " + className+".vueProductList");
+
+		return resultMap;
+	}
+	/**
+	 * 제품 상세검색
+	 */
+	@RequestMapping("vueProductDetaile.do")
+	@ResponseBody
+	public Map<String, Object> vueProductDetaile(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".vueProductDetaile");
+		logger.info("   - paramMap : " + paramMap+".vueProductDetaile");
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		ProductModel vueProductDetaile = productService.productDetaile(paramMap);
+		
+		resultMap.put("vueProductDetaile", vueProductDetaile);
+		
+		logger.info("+ End " + className+".vueProductDetaile");
+		
+		return resultMap;
+	}
+
+	/**
+	 * 제품 수량 추가 
+	 */
+	@RequestMapping("vueProductInsertStock.do")
+	@ResponseBody
+	public Map<String, Object> vueProductInsertStock(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".vueProductInsertStock");
+		logger.info("   - paramMap : " + paramMap+".vueProductInsertStock");
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		int success = productService.insertStock(paramMap);
+		
+		if(success == 1){
+			resultMap.put("result", "SUCCESS");
+		} else {
+			resultMap.put("result", "FAILE");
+		}
+		
+		logger.info("+ End " + className+".vueProductInsertStock");
+		
+		return resultMap;
+	}
+	
+	/**
+	 * 제품 대,중,소 추가 
+	 */
+	@RequestMapping("vuenewProductTypesInsert.do")
+	@ResponseBody
+	public Map<String, Object> vuenewProductTypesInsert(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".vuenewProductTypesInsert");
+		logger.info("   - paramMap : " + paramMap+".vuenewProductTypesInsert");
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		
+		int success = productService.newProductTypesInsert(paramMap);
+		
+		if(success == 1){
+			resultMap.put("result", "SUCCESS");
+		} else if(success == 2){
+			resultMap.put("result", "FAILETYPE");
+		} else if(success == 3){
+			resultMap.put("result", "FAILEPRODUCT");
+		} else {
+			resultMap.put("result", "FAILE");
+		}
+		
+		logger.info("+ End " + className+".vuenewProductTypesInsert");
+		
+		return resultMap;
+	}
+	
 }

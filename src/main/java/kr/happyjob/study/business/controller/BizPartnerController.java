@@ -57,6 +57,28 @@ public class BizPartnerController {
 	}
 	
 	/**
+	 * 공지사항 관리 초기화면
+	 */
+	@RequestMapping("vueBizPartner.do")
+	public String vueBizpartner(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".bizPartner");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		model.addAttribute("userType", (String) session.getAttribute("userType"));
+		
+		logger.info("+ End " + className + ".bizPartner");
+
+		return "business/BizPartner/vueBizPartner";
+	}
+	
+	
+	
+	/**
 	 * 거래처 리스트
 	 */
 	@RequestMapping("clientlist.do")
@@ -135,5 +157,38 @@ public class BizPartnerController {
 
 		return returnmap;
 	}
-	
+
+	/**
+	 * 거래처 리스트
+	 */
+	@RequestMapping("clientlistvue.do")
+	@ResponseBody
+	public Map<String, Object>  clientlistvue(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+							 HttpServletResponse response, HttpSession session) throws Exception {
+
+		logger.info("+ Start " + className + ".clientlist");
+		logger.info("   - paramMap : " + paramMap);
+
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+
+		List<BizPartnerModel> clientlist = bpService.clientlist(paramMap);
+		int countclientlist = bpService.countclientlist(paramMap);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+
+		//model.addAttribute("clientlist", clientlist);
+		//model.addAttribute("countclientlist", countclientlist);
+
+		resultMap.put("clientlist", clientlist);
+		resultMap.put("countclientlist", countclientlist);
+
+		logger.info("+ End " + className + ".clientlist");
+
+		return resultMap;
+	}
 }

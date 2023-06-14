@@ -34,7 +34,7 @@ public class ProductCodeController {
 	// Get class name for logger
 	private final String className = this.getClass().toString();
 	
-	// 제품 대분류 
+	// 제품 대분류 초기화면
 	@RequestMapping("productCode.do")
 	public String productCode(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
 			HttpServletResponse response, HttpSession session) throws Exception {
@@ -49,6 +49,22 @@ public class ProductCodeController {
 
 		return "system/productCode/productCode";
 	}
+	
+	// Vue 제품 대분류 초기화면
+	@RequestMapping("vueProductCode.do")
+	public String vueProductCode(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".vueProductCode");
+		logger.info("   - paramMap : " + paramMap);
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		
+		logger.info("+ End " + className + ".vueProductCode");
+
+		return "system/productCode/vueProductCode";
+	}	
 	
 	// 제품 대분류 조회
 	@RequestMapping("productCodeList.do")
@@ -80,6 +96,37 @@ public class ProductCodeController {
 
 		return "system/productCode/productCodeList";
 	}
+	
+	// Vue 제품 대분류 조회
+	@RequestMapping("vueProductCodeList.do")
+	@ResponseBody
+	public Map<String, Object> vueProductCodeList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".vueProductCodeList");
+		logger.info("   - paramMap : " + paramMap);
+		
+		// 페이징 처리 1페이지 0부터 , 2페이지 10부터		
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		Map<String, Object> returnMap = new HashMap<String, Object>();
+		
+		List<ProductCodeModel> productCodelist = productCodeService.productCodelist(paramMap);
+		
+		int countproductlist = productCodeService.countproductlist(paramMap);
+		
+		returnMap.put("productCodelist", productCodelist);
+		returnMap.put("countproductlist", countproductlist);
+		
+		logger.info("+ End " + className + ".vueProductCodeList");
+
+		return returnMap;
+	}	
 	
 	// 제품 대분류 상세 조회
 	@RequestMapping("detailproductcode.do")

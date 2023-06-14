@@ -56,6 +56,25 @@ public class AccTitleController {
 	}
 	
 	/**
+	 * 계정과목 관리 초기화면 vue
+	 */
+	@RequestMapping("vueAcctitle.do")
+	public String vueAcctitle(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".accTitle");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		
+		logger.info("+ End " + className + ".accTitle");
+
+		return "accounting/accountTitle/vueAcctitle";
+	}
+	
+	/**
 	 * 계정과목 목록
 	 */
 	@RequestMapping("acctitlelist.do")
@@ -82,6 +101,40 @@ public class AccTitleController {
 		logger.info("+ End " + className + ".acctitlelist");
 
 		return "accounting/accountTitle/acctitlelist";
+	}	
+	
+	/**
+	 * 계정과목 목록 vue - vueAcctitle.jsp에서 listcallback을 String to json
+	 */
+	@ResponseBody
+	@RequestMapping("vueAcctitlelist.do")
+	public Map<String,Object> vueAcctitlelist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".acctitlelist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<AccTitleModel> accTitlelist = accTitleService.accTitlelist(paramMap);
+		
+		int countAcctitlelist = accTitleService.countAcctitlelist(paramMap);
+		
+		model.addAttribute("accTitlelist", accTitlelist);
+		model.addAttribute("countAcctitlelist", countAcctitlelist);
+		
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("accTitlelist", accTitlelist);
+		resultMap.put("countAcctitlelist", countAcctitlelist);
+		
+		logger.info("+ End " + className + ".acctitlelist");
+		
+		return resultMap;
 	}	
 	
 	/**

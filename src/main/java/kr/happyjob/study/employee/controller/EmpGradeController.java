@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import kr.happyjob.study.accounting.model.AccTitleModel;
 import kr.happyjob.study.employee.model.EmpGradeModel;
 import kr.happyjob.study.employee.service.EmpGradeService;
 
@@ -56,6 +55,25 @@ public class EmpGradeController {
 	}
 	
 	/**
+	 * vue 승진내역 관리 초기화면
+	 */
+	@RequestMapping("vueEmpGrade.do")
+	public String vueEmpGrade(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".vueEmpGrade");
+		logger.info("   - paramMap : " + paramMap);
+		
+		
+		model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+		model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+		
+		logger.info("+ End " + className + ".vueEmpGrade");
+
+		return "employee/empGrade/vueEmpGrade";
+	}	
+	
+	/**
 	 * 승진내역 목록
 	 */
 	@RequestMapping("empGradelist.do")
@@ -82,6 +100,37 @@ public class EmpGradeController {
 		logger.info("+ End " + className + ".empGradelist");
 
 		return "employee/empGrade/empGradelist";
+	}
+	
+	/**
+	 * vue 승진내역 목록
+	 */
+	@RequestMapping("vueEmpGradelist.do")
+	@ResponseBody
+	public Map<String, Object> vueEmpGradelist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".vueEmpGradelist");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		Map<String, Object> returnMap = new HashMap<String, Object>();
+		
+		List<EmpGradeModel> empGradelist = empGradeService.empGradelist(paramMap);
+		
+		int countEmpgradelist = empGradeService.countEmpgradelist(paramMap);
+		
+		returnMap.put("empGradelist", empGradelist);
+		returnMap.put("countEmpgradelist", countEmpgradelist);
+		
+		logger.info("+ End " + className + ".vueEmpGradelist");
+
+		return returnMap;
 	}	
 	
 	/**
@@ -114,6 +163,37 @@ public class EmpGradeController {
 	}
 	
 	/**
+	 * vue 승진내역 상세조회
+	 */
+	@RequestMapping("vueDetailEmp.do")
+	@ResponseBody
+	public Map<String, Object> vueDetailEmp (Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className + ".vueDetailEmp");
+		logger.info("   - paramMap : " + paramMap);
+		
+		int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+		int pageindex = (cpage - 1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		Map<String, Object> returnMap = new HashMap<String, Object>();
+		
+		List<EmpGradeModel> detailEmp = empGradeService.detailEmp(paramMap);
+		
+		int countEmpdetail = empGradeService.countEmpdetail(paramMap);
+		
+		returnMap.put("detailEmp", detailEmp);
+		returnMap.put("countEmpdetail", countEmpdetail);
+		
+		logger.info("+ End " + className + ".vueDetailEmp");
+
+		return returnMap;
+	}	
+	
+	/**
 	 * 승진내역 등록
 	 */
 	@RequestMapping("empGradesave.do")
@@ -125,6 +205,7 @@ public class EmpGradeController {
 		logger.info("   - paramMap : " + paramMap);		
 		
 		paramMap.put("loginId", (String) session.getAttribute("loginId"));
+		paramMap.put("userNm", (String) session.getAttribute("userNm"));
 		
 		empGradeService.empGradesave(paramMap);
 		

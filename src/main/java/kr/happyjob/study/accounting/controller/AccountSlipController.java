@@ -57,6 +57,21 @@ public class AccountSlipController {
 	}
 	
 	/**
+	 * 회계전표 초기화면 vue
+	 */
+	@RequestMapping("vueAccSlipF.do")
+	public String vueAccSlipF(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".accSlipF");
+		logger.info("   - paramMap : " + paramMap+".accSlipF");
+		
+		logger.info("+ End " + className+".accSlipF");
+
+		return "accounting/accountSlip/vueAccSlipF";
+	}
+	
+	/**
 	 * 회계전표 리스트 
 	 */
 	@RequestMapping("accSlipFList.do")
@@ -86,6 +101,46 @@ public class AccountSlipController {
 		logger.info("+ End " + className+".accSlipFList");
 
 		return "accounting/accountSlip/accSlipFList";
+	}
+	
+	/**
+	 * 회계전표 리스트 vue - string to json
+	 */
+	@ResponseBody
+	@RequestMapping("vueAccSlipFList.do")
+	public Map<String, Object> vueAccSlipFList(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+			HttpServletResponse response, HttpSession session) throws Exception {
+		
+		logger.info("+ Start " + className+".accSlipFList");
+		logger.info("   - paramMap : " + paramMap+".accSlipFList");
+		
+		
+		int pageSize = Integer.parseInt((String)paramMap.get("pageSize"));
+		int cpage = Integer.parseInt((String)paramMap.get("cpage"));
+		int pageindex = (cpage-1) * pageSize;
+		
+		paramMap.put("pageindex", pageindex);
+		paramMap.put("pageSize", pageSize);
+		
+		List<AccountSlipModel> accSlipFList = accountSlipService.accountSlipList(paramMap);
+		
+		int totalCnt = accountSlipService.accountSlipListTotalCnt(paramMap);
+		
+		model.addAttribute("accSlipFList", accSlipFList);
+		model.addAttribute("totalCnt", totalCnt);
+		model.addAttribute("userNm", (String)session.getAttribute("userNm"));
+		model.addAttribute("loginId", (String)session.getAttribute("loginId"));
+		
+		//추가내용
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("accSlipFList", accSlipFList);
+		resultMap.put("totalCnt", totalCnt);
+		resultMap.put("userNm", session.getAttribute("userNm"));
+		resultMap.put("loginId", session.getAttribute("loginId"));
+		
+		logger.info("+ End " + className+".accSlipFList");
+		
+		return resultMap;
 	}
 	
 	/**

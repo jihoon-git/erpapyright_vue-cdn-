@@ -20,7 +20,7 @@
 		    	group by loginID) pm ON pt.loginID = pm.loginID AND pt.prmtn_no <![CDATA[<]]> pm.mprmtn_no
 		    left outer join tb_userinfo ui on pt.loginID = ui.loginID
 		    left outer join tb_detail_code dc on dc.group_code = 'dept_cd' and dc.detail_code = ui.dept_cd
-		    inner join tb_detail_code dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd
+		    left outer join tb_detail_code dc2 on dc2.group_code = 'rank_cd' and dc2.detail_code = ui.rank_cd
 	        	<where>    
 	               <if test="(srcdetp != null) and (!srcdetp.equals(''))">
 	                    and ui.dept_cd = #{srcdetp}
