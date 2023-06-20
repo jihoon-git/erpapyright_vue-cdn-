@@ -15,11 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import kr.happyjob.study.business.model.BizPartnerModel;
 import kr.happyjob.study.business.service.BizPartnerService;
+import kr.happyjob.study.system.model.DeptMgrModel;
 
 @Controller
 @RequestMapping("/business/")
@@ -37,7 +39,7 @@ public class BizPartnerController {
 	
 	
 	/**
-	 * 공지사항 관리 초기화면
+	 * 거래처 관리 초기화면
 	 */
 	@RequestMapping("bizPartner.do")
 	public String bizPartner(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
@@ -57,7 +59,7 @@ public class BizPartnerController {
 	}
 	
 	/**
-	 * 공지사항 관리 초기화면
+	 * 거래처 관리 초기화면
 	 */
 	@RequestMapping("vueBizPartner.do")
 	public String vueBizpartner(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
@@ -191,4 +193,15 @@ public class BizPartnerController {
 
 		return resultMap;
 	}
+	
+	   /*사업자번호  중복 체크*/
+	   @RequestMapping(value="/checkPermitNo.do", method=RequestMethod.POST)
+	   @ResponseBody
+	   public int checkPermitNo(BizPartnerModel model) throws Exception{
+		   
+		   logger.info("+ Start " + className + ".checkPermitNo");
+		   int result = bpService.checkPermitNo(model);
+		   logger.info("+ End " + className + ".checkPermitNo");
+		   return result;
+	   }
 }

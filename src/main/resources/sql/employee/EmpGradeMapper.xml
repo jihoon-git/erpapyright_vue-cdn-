@@ -29,7 +29,7 @@
 	                    and ui.rank_cd  = #{srcrank}
 	               </if>   
 	               <if test="(srcempno != null) and (!srcempno.equals(''))">
-	                    and ui.emp_no = #{srcempno}
+	                    and ui.emp_no LIKE CONCAT('%', #{srcempno}, '%')
 	               </if>            
 	               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
 	                   and pt.prmtn_date  <![CDATA[>=]]> #{srcsdate}
@@ -63,7 +63,7 @@
 	                    and ui.rank_cd  = #{srcrank}
 	               </if>   
 	               <if test="(srcempno != null) and (!srcempno.equals(''))">
-	                    and ui.emp_no = #{srcempno}
+	                    and ui.emp_no LIKE CONCAT('%', #{srcempno}, '%')
 	               </if>            
 	               <if test="(srcsdate != null) and (!srcsdate.equals(''))">
 	                   and pt.prmtn_date  <![CDATA[>=]]> #{srcsdate}

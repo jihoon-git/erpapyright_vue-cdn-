@@ -52,4 +52,9 @@ public class BizPartnerServiceImpl implements BizPartnerService {
 	public int clientdelete(Map<String, Object> paramMap) throws Exception{
 		return bpDao.clientdelete(paramMap);
 	}
+
+	/** 사업자번호 중복 체크 */
+	public int checkPermitNo(BizPartnerModel model) throws Exception{
+		return bpDao.checkPermitNo(model);
+	}
 }

@@ -125,4 +125,11 @@
 		delete from tb_client
 		where client_no = #{client_no}
 	</delete>
+	
+	     <!-- 사업자번호 중복검사 -->
+	<select id="checkPermitNo" parameterType="String" resultType="int">
+		SELECT count(*)
+		  FROM tb_client
+		 WHERE permit_no = #{permit_no}
+	</select>	
 </mapper>

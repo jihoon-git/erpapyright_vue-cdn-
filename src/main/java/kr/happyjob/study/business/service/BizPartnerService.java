@@ -25,4 +25,7 @@ public interface BizPartnerService {
 	
 	/** 거래처 삭제 */
 	public int clientdelete(Map<String, Object> paramMap) throws Exception;
+
+	/** 사업자번호 중복 체크 */
+	public int checkPermitNo(BizPartnerModel model) throws Exception;
 }
