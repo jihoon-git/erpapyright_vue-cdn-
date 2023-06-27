@@ -37,23 +37,22 @@
 	
 	<!-- 일별매출/한달간 누적매출 -->
 	<select id="ddRevChart" resultType="kr.happyjob.study.sales.model.DdRevenueModel">
-	 SET @va=0;
-	  SELECT DATE_FORMAT(contract_date,'%Y-%m-%d') AS contract_date
-	         ,s.sum_sales AS sum_sales
-	         ,truncate((@va:=@va+s.sum_sales), 0) AS cumsum_sales  
-	   FROM (
-	      select co.contract_date, sum(co.total_price) sum_sales , co.client_no
-	       from tb_contract co
-	        inner join tb_client cl on co.client_no = cl.client_no
-	       where co.contract_type='2' 
-		  <if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
+      SET @va=0;
+      SELECT DATE_FORMAT(contract_date,'%Y-%m-%d') AS contract_date
+             ,s.sum_sales AS sum_sales
+             ,truncate((@va:=@va+s.sum_sales), 0) AS cumsum_sales  
+       FROM (
+             select co.contract_date, sum(co.total_price) sum_sales
+               from tb_contract co
+              where co.contract_type='2' 
+     		<if test = "(searchClientNo!= null) and (!searchClientNo.equals(''))">
 		  		and co.client_no = #{searchClientNo}
-		  </if>
-	       GROUP BY DATE_FORMAT(contract_date,'%Y-%m-%d'), co.client_no
-	        ) s
+		    </if>
+               GROUP BY DATE_FORMAT(contract_date,'%Y-%m-%d')
+            ) s
 	  WHERE DATE_FORMAT(contract_date,'%Y-%m-%d') between #{oneMonthAgo} and #{searchDate}
-	  GROUP BY contract_date
-	  ORDER BY contract_date
+      GROUP BY contract_date
+      ORDER BY contract_date;
 	</select>
 	
 	<!-- 일자별 품목별 매출 -->

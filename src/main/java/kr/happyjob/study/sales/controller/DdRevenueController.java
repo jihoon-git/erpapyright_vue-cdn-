@@ -221,4 +221,25 @@ public class DdRevenueController {
 		return "/sales/ddRevenue/ddRevProductChart";
 	}
 	
+	/**
+	    * Vue 제품 일별매출/한달간 누적매출
+	    */
+	   @RequestMapping("vueDdRevProductChart.do")
+	   @ResponseBody
+	   public Map<String, Object> vueDdRevProductChart(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+	         HttpServletResponse response, HttpSession session) throws Exception {
+	      
+	      logger.info("+ Start " + className + ".vueDdRevProductChart");
+	      logger.info("   - paramMap : " + paramMap);
+	      
+	      Map<String, Object> resultMap = new HashMap<String, Object>();
+	      
+	      List<DdRevenueModel> ddRevProductChartModel = ddRevenueService.ddRevProductChart(paramMap);
+	      resultMap.put("ddRevProductChartModel", ddRevProductChartModel);
+	      
+	      logger.info("+ End " + className + ".vueDdRevProductChart");
+	      
+	      return resultMap;
+	   }
+	
 }

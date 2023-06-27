@@ -13,6 +13,7 @@
 		        , ui.emp_no as empno
 		        , ui.name as empname
 				, at.rest_cd 
+				, dcr.detail_name as rest_name
 				, at.st_date
 				, at.ed_date
 		        , at.app_date
@@ -21,6 +22,7 @@
 				
 		  from tb_atd_info at
 		      inner join tb_userinfo ui on ui.loginID = at.loginID
+		      left outer join tb_detail_code dcr on dcr.group_code = 'rest_cd' and dcr.detail_code = at.rest_cd
 		  
 		  <where>
 			      
@@ -80,7 +82,9 @@
 	   <!-- 근무부서	근태종류	성명	사번	비상연락처	기간	휴가사유	신청일	승인구분	반려사유 -->
 	     
 		  select ui.dept_cd as deptcd
-				, at.rest_cd 
+				, at.rest_cd
+				,ifnull(dcd.detail_name, '미발령') as dept_name
+       			,dcr.detail_name as rest_name
 		        , ui.name as empnamepop
 		        , ui.emp_no as empnopop
 		        , ui.user_type as user_type      
@@ -94,7 +98,8 @@
      
 		  from tb_atd_info at
 		      inner join tb_userinfo ui on ui.loginID = at.loginID
-	    
+	          left outer join tb_detail_code dcd on dcd.group_code = 'dept_cd' and dcd.detail_code = ui.dept_cd
+    		  left outer join tb_detail_code dcr on dcr.group_code = 'rest_cd' and dcr.detail_code = at.rest_cd
 	    where at.atd_no = #{atd_no}
 	    
 	  	</select>

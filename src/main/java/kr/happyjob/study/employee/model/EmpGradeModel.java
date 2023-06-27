@@ -10,7 +10,14 @@ public class EmpGradeModel {
 	private String prmtn_date;
 	private int prmtn_no;
 	private String prmtn_name;
+	private String rank_cd;
 	
+	public String getRank_cd() {
+		return rank_cd;
+	}
+	public void setRank_cd(String rank_cd) {
+		this.rank_cd = rank_cd;
+	}
 	public int getEmp_no() {
 		return emp_no;
 	}

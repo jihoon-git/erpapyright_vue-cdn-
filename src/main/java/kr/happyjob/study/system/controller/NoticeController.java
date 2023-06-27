@@ -200,6 +200,116 @@ public class NoticeController {
 	
 	
 	
+	// vue 공지사항 초기화면
+		@RequestMapping("vueNotice.do")
+		public String vueNotice(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("+ Start " + className + ".vueNotice");
+			logger.info("   - paramMap : " + paramMap);
+			
+			model.addAttribute("loginId", (String) session.getAttribute("loginId"));
+			model.addAttribute("userNm", (String) session.getAttribute("userNm"));
+			
+			logger.info("+ End " + className + ".vueNotice");
+
+			return "system/notice/vueNotice";
+		}
+		
+		// vue 공지사항 목록 조회
+		@RequestMapping("vueNoticeList.do")
+		@ResponseBody
+		public Map<String, Object> vueNoticelist(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+				
+			logger.info("+ Start " + className + ".vueNoticeList");
+			logger.info("   - paramMap : " + paramMap);
+			
+			// 1     0
+			// 2     10
+			// 3     20		
+			
+			int pageSize = Integer.parseInt((String) paramMap.get("pageSize"));
+			int cpage = Integer.parseInt((String) paramMap.get("cpage"));
+			int pageindex = (cpage - 1) * pageSize;
+			
+			paramMap.put("pageindex", pageindex);
+			paramMap.put("pageSize", pageSize);
+			
+			List<NoticeModel> vueNoticelist = noticeService.noticelist(paramMap);
+			
+			int countnoticelist = noticeService.countnoticelist(paramMap);
+			
+			Map<String, Object> returnmap = new HashMap<String, Object>();
+			
+			returnmap.put("vueNoticelist", vueNoticelist);
+			returnmap.put("countnoticelist", countnoticelist);		
+			
+			logger.info("+ End " + className + ".vueNoticeList");
+
+			return returnmap;
+		}
+		
+		// vue 공지사항 등록
+		@RequestMapping("vueNoticeListSave.do")
+		@ResponseBody
+		public Map<String, Object> vueNoticelistsave(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("+ Start " + className + ".vueNoticeListSave");
+			logger.info("   - paramMap : " + paramMap);		
+			
+			paramMap.put("loginId", (String) session.getAttribute("loginId"));
+			
+			String action = (String) paramMap.get("action");
+			
+			if("I".equals(action)) {
+				noticeService.noticenewsave(paramMap);
+			} else if("U".equals(action)) {
+				noticeService.noticenewupdate(paramMap);
+			} else if("D".equals(action)) {
+				noticeService.noticenewdelete(paramMap);
+			}
+			
+			Map<String, Object> returnmap = new HashMap<String, Object>();
+			
+			returnmap.put("result", "SUCCESS");
+			
+			
+			
+			logger.info("+ End " + className + ".vueNoticeListSave");
+
+			return returnmap;
+		}
+		
+		// vue 상세조회
+		@RequestMapping("vueNoticeDetailone.do")
+		@ResponseBody
+		public Map<String, Object> vueNoticeDetailone(Model model, @RequestParam Map<String, Object> paramMap, HttpServletRequest request,
+				HttpServletResponse response, HttpSession session) throws Exception {
+			
+			logger.info("+ Start " + className + ".vueNoticeDetailone");
+			logger.info("   - paramMap : " + paramMap);		
+					
+			NoticeModel detailone = noticeService.detailone(paramMap);
+			
+			Map<String, Object> returnmap = new HashMap<String, Object>();
+			
+			returnmap.put("result", "SUCCESS");
+			returnmap.put("detailone", detailone);
+			returnmap.put("loginId", (String) session.getAttribute("loginId"));
+			
+			logger.info("+ End " + className + ".vueNoticeDetailone");
+
+			return returnmap;
+		}
+		
+		
+	
+	
+	
+	
+	
 	
 	
 	

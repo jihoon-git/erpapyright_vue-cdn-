@@ -14,6 +14,7 @@
 		       ,ui.name 
 		       ,dc.detail_name as deptname 
 		       ,dc2.detail_name as rankname 
+		       ,ui.rank_cd rank_cd
 		  FROM tb_promotion pt
 		    LEFT JOIN (select max(prmtn_no) as mprmtn_no, loginID
 		    	from tb_promotion

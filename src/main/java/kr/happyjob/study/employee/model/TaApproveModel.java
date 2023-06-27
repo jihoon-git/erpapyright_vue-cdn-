@@ -6,6 +6,8 @@ public class TaApproveModel {
 	private int atd_no;
 	private int empno;
 	private String empname;
+	private String rest_name;
+	private String dept_name;
 	private String rest_cd;
 	private String loginID;
 	private String rest_rsn;
@@ -23,6 +25,18 @@ public class TaApproveModel {
 	private String	user_type;
 	
 	
+	public String getRest_name() {
+		return rest_name;
+	}
+	public void setRest_name(String rest_name) {
+		this.rest_name = rest_name;
+	}
+	public String getDept_name() {
+		return dept_name;
+	}
+	public void setDept_name(String dept_name) {
+		this.dept_name = dept_name;
+	}
 	public int getAtd_no() {
 		return atd_no;
 	}
